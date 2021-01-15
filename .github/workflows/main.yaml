@@ -28,12 +28,12 @@ jobs:
         working-directory: ./blog
         run: npm i
         
-      - name: Install Angular CLI
-        run: sudo npm i -g gatsby-cli@2.26.1 > /dev/null
+      - name: Install Gatsby CLI
+        run: sudo npm i -g gatsby-cli@2.17.1 > /dev/null
   
       - name: Build for production
         working-directory: ./blog
-        run: gatsby build
+        run: sudo gatsby build
       
       - name: Deploy to S3
         uses: shallwefootball/s3-upload-action@master
