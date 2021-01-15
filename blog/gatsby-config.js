@@ -5,8 +5,8 @@ module.exports = {
       name: `Adam Swanson`,
       summary: `, hailing from Indiana, who designs, builds, and delivers software. You know, the cool stuff.`,
     },
-    description: `A starter blog demonstrating what Gatsby can do.`,
-    siteUrl: `https://gatsby-starter-blog-demo.netlify.app/`,
+    description: `The writings of a new software developer.`,
+    siteUrl: `https://blog.layerseven.net/`,
     social: {
       twitter: `crisp2020`,
     },
@@ -69,9 +69,9 @@ module.exports = {
         icon: `content/assets/icon.png`,
       },
     },
-    `gatsby-plugin-react-helmet`,
     // this (optional) plugin enables Progressive Web App + Offline functionality
     // To learn more, visit: https://gatsby.dev/offline
-    // `gatsby-plugin-offline`,
+    `gatsby-plugin-offline`,
+    `gatsby-plugin-react-helmet`,
   ],
 }
