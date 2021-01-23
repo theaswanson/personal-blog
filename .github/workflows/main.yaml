@@ -29,7 +29,7 @@ jobs:
         run: npm i
         
       - name: Install Gatsby CLI
-        run: sudo npm i -g gatsby-cli@2.17.1 > /dev/null
+        run: sudo npm i -g gatsby-cli@2.18.0 > /dev/null
   
       - name: Build for production
         working-directory: ./blog
