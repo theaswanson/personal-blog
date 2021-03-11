@@ -4,7 +4,9 @@ date: "2021-03-11T20:00:00.000Z"
 description: "Adding authentication to any app should be straightforward. Here's how to do it with Azure AD in a .NET Angular app using MSAL."
 ---
 
-I recently went through this process and was disappointed at the lack of documentation. Then I realized that the latest version of the `msal-angular` library was only 8 days old at the time of writing, so that explains some things.
+![Header](header.jpg)
+
+I recently went through this process and was disappointed at the lack of documentation. Then I realized that the latest version of the `msal-angular` library I used was only 8 days old at the time of writing, so that explains some things.
 
 In either case, I've decided to write out my steps for anyone else looking to setup a similar project with this type of authentication. To walk through this process, we'll be creating a web app from scratch and deploying it to a new App Service in Azure. We'll also register the app in Azure AD.
 
