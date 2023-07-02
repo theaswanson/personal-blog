@@ -1,0 +1,1115 @@
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Adam Swanson's Blog RSS Feed]]></title><description><![CDATA[The writings of a software developer.]]></description><link>https://blog.adamswanson.dev</link><generator>GatsbyJS</generator><lastBuildDate>Sun, 02 Jul 2023 21:36:54 GMT</lastBuildDate><item><title><![CDATA[Adding Authentication with Azure AD to a .NET Angular Web App with MSAL]]></title><description><![CDATA[I recently went through this process and was disappointed at the lack of documentation. Then I realized that the latest version of the…]]></description><link>https://blog.adamswanson.dev/azure-ad-auth-dotnet-angular-msal/</link><guid isPermaLink="false">https://blog.adamswanson.dev/azure-ad-auth-dotnet-angular-msal/</guid><pubDate>Thu, 11 Mar 2021 20:00:00 GMT</pubDate><content:encoded>&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 630px; &quot;
+    &gt;
+      &lt;a
+    class=&quot;gatsby-resp-image-link&quot;
+    href=&quot;/static/acf64d05c65d853331b47475c731996d/0f98f/header.jpg&quot;
+    style=&quot;display: block&quot;
+    target=&quot;_blank&quot;
+    rel=&quot;noopener&quot;
+  &gt;
+    &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 56.32911392405063%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/jpeg;base64,/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wgARCAALABQDASIAAhEBAxEB/8QAGAAAAwEBAAAAAAAAAAAAAAAAAAIDAQX/xAAVAQEBAAAAAAAAAAAAAAAAAAABAv/aAAwDAQACEAMQAAAB5s47QwhL/8QAGhAAAQUBAAAAAAAAAAAAAAAAAAECAxESEP/aAAgBAQABBQJI2rDkfWi+f//EABYRAQEBAAAAAAAAAAAAAAAAAAABIf/aAAgBAwEBPwGYr//EABYRAAMAAAAAAAAAAAAAAAAAAAEQEf/aAAgBAgEBPwGhf//EABsQAAIBBQAAAAAAAAAAAAAAAAABIQISICIx/9oACAEBAAY/AnXdIm4TNeYf/8QAGhABAAMAAwAAAAAAAAAAAAAAAQAQETFBcf/aAAgBAQABPyFyELxHPtUBY96tKTFr/9oADAMBAAIAAwAAABAz3//EABYRAQEBAAAAAAAAAAAAAAAAAAERAP/aAAgBAwEBPxAqq3Kt3//EABcRAQADAAAAAAAAAAAAAAAAAAEQESH/2gAIAQIBAT8QwpI//8QAHBABAAAHAQAAAAAAAAAAAAAAAQAQESExUWFB/9oACAEBAAE/ELRmFeOPXyFJRAUa3C6SbhdkMQhgZf/Z&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Header&quot;
+        title=&quot;&quot;
+        src=&quot;/static/acf64d05c65d853331b47475c731996d/828fb/header.jpg&quot;
+        srcset=&quot;/static/acf64d05c65d853331b47475c731996d/ff44c/header.jpg 158w,
+/static/acf64d05c65d853331b47475c731996d/a6688/header.jpg 315w,
+/static/acf64d05c65d853331b47475c731996d/828fb/header.jpg 630w,
+/static/acf64d05c65d853331b47475c731996d/0ede0/header.jpg 945w,
+/static/acf64d05c65d853331b47475c731996d/3ac88/header.jpg 1260w,
+/static/acf64d05c65d853331b47475c731996d/0f98f/header.jpg 1920w&quot;
+        sizes=&quot;(max-width: 630px) 100vw, 630px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+        decoding=&quot;async&quot;
+      /&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;I recently went through this process and was disappointed at the lack of documentation. Then I realized that the latest version of the &lt;code class=&quot;language-text&quot;&gt;msal-angular&lt;/code&gt; library I used was only 8 days old at the time of writing, so that explains some things.&lt;/p&gt;
+&lt;p&gt;In either case, I&apos;ve decided to write out my steps for anyone else looking to setup a similar project with this type of authentication. To walk through this process, we&apos;ll be creating a web app from scratch and deploying it to a new App Service in Azure. We&apos;ll also register the app in Azure AD.&lt;/p&gt;
+&lt;p&gt;You can find the completed web app &lt;a href=&quot;https://github.com/theaswanson/my-authenticated-app&quot;&gt;here&lt;/a&gt;, or you can follow along and create it yourself using the steps below.&lt;/p&gt;
+&lt;p&gt;To summarize, here&apos;s what we&apos;re building:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Web app with .NET 5 Web API and Angular 11, hosted in an Azure App Service&lt;/li&gt;
+&lt;li&gt;Authentication with Azure AD using the &lt;a href=&quot;https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow&quot;&gt;Microsoft Identity platform and OAuth 2.0 authorization code flow&lt;/a&gt;, and the &lt;a href=&quot;https://www.npmjs.com/package/@azure/msal-angular&quot;&gt;@azure/msal-angular@2.0.0-beta.0&lt;/a&gt; package&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;And here&apos;s what we&apos;re gonna do:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Create a new project from the .NET Angular template&lt;/li&gt;
+&lt;li&gt;Upgrade the Angular app from 8 to 11&lt;/li&gt;
+&lt;li&gt;Deploy the app to an App Service&lt;/li&gt;
+&lt;li&gt;Add a new app registration in Azure AD&lt;/li&gt;
+&lt;li&gt;Configure the app redirect URIs to ensure eligibility for the Authorization Code Flow with PKCE.&lt;/li&gt;
+&lt;li&gt;Configure the .NET Web API for authentication, authorization, and CORS&lt;/li&gt;
+&lt;li&gt;Install MSAL and other dependencies for Angular&lt;/li&gt;
+&lt;li&gt;Configure MSAL and Angular app for authentication&lt;/li&gt;
+&lt;li&gt;Redeploy to App Service&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Requirements:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Microsoft Azure account with free-tier subscription (for Azure AD and App Service)&lt;/li&gt;
+&lt;li&gt;Visual Studio Code (for running and editing the app)&lt;/li&gt;
+&lt;li&gt;VSCode Azure App Service extension (for publishing to the App Service)&lt;/li&gt;
+&lt;li&gt;.NET 5.0 (for running the app and adding packages)&lt;/li&gt;
+&lt;li&gt;Node and npm (for updating Angular, installing MSAL, and Angular CLI)&lt;/li&gt;
+&lt;li&gt;Angular CLI (for generating the &lt;code class=&quot;language-text&quot;&gt;AuthService&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Create the web app&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;Generate the app using the .NET Angular template&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;dotnet new angular -o my-authenticated-app&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Trust the certificate, if needed&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;dotnet dev-certs https --trust&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Upgrade Angular from 8 to 11&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;From the &lt;code class=&quot;language-text&quot;&gt;ClientApp&lt;/code&gt; folder, run these commands:&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;ng update @angular/core@8 @angular/cli@8&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;ng update @angular/core@9 @angular/cli@9&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Remove &lt;code class=&quot;language-text&quot;&gt;export { renderModule, renderModuleFactory } from &apos;@angularplatform-server&apos;&lt;/code&gt; from &lt;code class=&quot;language-text&quot;&gt;main.ts&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Change &lt;code class=&quot;language-text&quot;&gt;progress: false&lt;/code&gt; to &lt;code class=&quot;language-text&quot;&gt;progress: true&lt;/code&gt; in &lt;code class=&quot;language-text&quot;&gt;angular.json&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;npm uninstall @nguniversal/module-map-ngfactory-loader&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Remove &lt;code class=&quot;language-text&quot;&gt;ModuleMapLoaderModule&lt;/code&gt; import and reference from &lt;code class=&quot;language-text&quot;&gt;app.server.module.ts&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;ng add @angular/localize&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;ng update @angular/cli@10 @angular/core@10 rxjs&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;ng update @angular/cli@11 @angular/core@11 --force&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;npm uninstall node-sass&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;npm i -g npm-check-updates&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;ncu -u&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;npm i&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;npm update&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;npm audit fix&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;npm i -D typescript@4.1.5&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Run the app and verify it starts correctly. You should get a page like this:&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 630px; &quot;
+    &gt;
+      &lt;a
+    class=&quot;gatsby-resp-image-link&quot;
+    href=&quot;/static/e37035eaf30b0c583311a5301f327738/6be49/hello-world.png&quot;
+    style=&quot;display: block&quot;
+    target=&quot;_blank&quot;
+    rel=&quot;noopener&quot;
+  &gt;
+    &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 45.56962025316456%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAJCAYAAAAywQxIAAAACXBIWXMAAAsTAAALEwEAmpwYAAABVElEQVR42o2SWU/DMBCE8/9/XXkBNU1Km4s0p+MjbnN9yIYKcQgYabQv9uzszgbWXhmGASEGtNZ8xbZtP9JhnmeMGTHjiFKa6+1GcDqd2e12HKKI3cMDRmvmZWGaJtZ1/VX0LnyvDoFUirysudQdRVnRNC1t09J1PcaYT4//g2CeF/bVwnMpORY95zSjvJR+BdZa7/TbGn4THK2lbjqqqqZpGu/QOXPjLsvywffx/3ToHIRhyNN+z+PjE0macU4SkjQlTTOyLCfPC3TdI8VAL4QPcVASMQi0NkipcMa8oOscRhFJfCIOIw5xjAsqio/E8ZFDFPv6fDyRZzlV3TBKzaYtNzX61QxS+uqmCq7GYqoe8dJQlhdeypIiL6jrmrbt3ti90TlxITqHSiq00mjpqBC9YJ1mgvU6YfXoKbVCSuk/uFW4hF3X+4m4adYv3N7pT2zbeAVJB7aFe/JiEwAAAABJRU5ErkJggg==&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Hello World&quot;
+        title=&quot;&quot;
+        src=&quot;/static/e37035eaf30b0c583311a5301f327738/f058b/hello-world.png&quot;
+        srcset=&quot;/static/e37035eaf30b0c583311a5301f327738/c26ae/hello-world.png 158w,
+/static/e37035eaf30b0c583311a5301f327738/6bdcf/hello-world.png 315w,
+/static/e37035eaf30b0c583311a5301f327738/f058b/hello-world.png 630w,
+/static/e37035eaf30b0c583311a5301f327738/40601/hello-world.png 945w,
+/static/e37035eaf30b0c583311a5301f327738/6be49/hello-world.png 1160w&quot;
+        sizes=&quot;(max-width: 630px) 100vw, 630px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+        decoding=&quot;async&quot;
+      /&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;View the &quot;Fetch data&quot; page. It should load the weather data. Later, after we add authentication, this page will require authentication and will not load the weather data unless a user is logged in.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Create the App Service&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;In the Azure portal, under App Services, click &quot;Create&quot;&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 256px; &quot;
+    &gt;
+      &lt;a
+    class=&quot;gatsby-resp-image-link&quot;
+    href=&quot;/static/1ec2e50307fe3294fb410682e8a78a9d/6f3f2/create-app-service.png&quot;
+    style=&quot;display: block&quot;
+    target=&quot;_blank&quot;
+    rel=&quot;noopener&quot;
+  &gt;
+    &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 41.139240506329116%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAICAYAAAD5nd/tAAAACXBIWXMAAAsTAAALEwEAmpwYAAABmUlEQVR42m2Su28aQRjE6ZB5wz0Nd3CQgxMGgQCJuxMBQeMECzlCyLgHl7RQ0FAh/uxf9G2ErUQpdvfb18zszCZyuRy+79NsNrFtW7V2u63WKpUKnudRr9cpl8s4joOu6+TzeUzTxDAMCoUCxWLxsyWSyST7/Z7r9crtdmO327FarVR9Op04n88cDgeOxyOXy0URZTIZxuOxItQ0DcuyvgClExWTyYTlckkcxzQaDXq9nrosezJvtVpqflclSv9VpwDlyUEQMBqN6Pf7qh4MBnS7XYbDIa7rkk6nyWazStn/QP4ClO7Rtqm6jvJIPBR/xDND1ykWchQLeR4eUmTSaQUuwKlU6pPgi6REQgx+euoQz1+Yzub8en1lvV7zslxS8xrYwRTHaxJHIZ1OVymXAO+WWLaNoWvoj3VMN/gDKKlGs2e+T2e8b7fsPz7Yvr1RrXlYfohT8/n545n5fMFmsyGKIhaLBWEYUqk4WJaJZjqYTouEyBWf/G8N9T2q1apK7z4ahoZh6IjXQi7nS6WSquWZEpJYJKCS9m+RAuRpVgIphgAAAABJRU5ErkJggg==&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Create an App Service&quot;
+        title=&quot;&quot;
+        src=&quot;/static/1ec2e50307fe3294fb410682e8a78a9d/6f3f2/create-app-service.png&quot;
+        srcset=&quot;/static/1ec2e50307fe3294fb410682e8a78a9d/c26ae/create-app-service.png 158w,
+/static/1ec2e50307fe3294fb410682e8a78a9d/6f3f2/create-app-service.png 256w&quot;
+        sizes=&quot;(max-width: 256px) 100vw, 256px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+        decoding=&quot;async&quot;
+      /&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Select your Azure subscription and resource group. Set a name under Instance Details, set Publish to &quot;Code&quot;, Runtime stack to &quot;.NET 5&quot;, Operating System to &quot;Windows&quot;, and select a region. Also select an appropriate Windows Plan. Click &quot;Review + create&quot;.&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 630px; &quot;
+    &gt;
+      &lt;a
+    class=&quot;gatsby-resp-image-link&quot;
+    href=&quot;/static/2a0c96b51d5e9046dc79f440f3dd3690/3c051/create-web-app.png&quot;
+    style=&quot;display: block&quot;
+    target=&quot;_blank&quot;
+    rel=&quot;noopener&quot;
+  &gt;
+    &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 116.45569620253164%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAXCAYAAAALHW+jAAAACXBIWXMAAAsTAAALEwEAmpwYAAADM0lEQVR42o2UyZLbNhCGdU9Z3LAQXEBwl6iFkmcySVUUzeJjjskj5DHyAKm89O/qlkhLE8fO4SuQINH994bFZhjwfD7jdDrhdPoF5/MZSil4ngff95kwDP8XQRBgkdkC1pXI8xzOOWRZhjiOkSQJrzqOsVwuvws5ZoOuarHZjRiGNbbbLcqyRN/3WK8v78N6jaIoeJ8gp9PzLeScjC5WqxU+fXrjkN/eXvH6+oqXlxfm+fkZH3864/HnX/Hw8MAcj0fmcDhgHEdeHx8f0XUdp2lB1g/HI6uRUkIIwSglEUUR/FAiiAR83+PQ6NAt/wq5qir28PT0xKGSA1Ldti2aukFdVqiIquI9omu7+XmCznHIVIR+tULlHJSU7IWUUdUKV6DrWs5nkiaIRHSJQoo7pJLQWl0U0g9U0TRNGa0UgjBgb0O/R99ukOoMRibQUfxVYmFgVHIxOOWCVE35ow+EyVooU8H74CP0I0SB+CaXtnEO437kokwNPRnUSsPEhiPQWiMIQoTvCPxgLggb5CY2CcQ1b9MH+rEpWgztBpt+i9o2EJ6CCuM7rHEoswq5sexgQapMHN8pI/wwgkpzJInhaambGm3XQscanu/BD3yG3mMTc7FYIYVCleZi3EgnhaWt0dU9kxkLFcWMDPWM8CWEr7g4s0FbFCishaRGvjGYJzmqqsN6c8B2NdwVQLwnvBaF5No851mkPN6GnWUpz66QkkOjPoyikAmv8J6IuB8vfagUV5fGhzYuV1GAIBSoVyPG/Y6NWmt5GmgtCjtfCtQJIhJfckgqVn3H42aMubsHl54/O5qLdf12+z6dufRhWWM8/ojtds83RtM0vPIstw3qppnV0Dfev67T//RMCnmWtclg6zVy63j0EmN4pil05wq0bcOXRlE4Tg0VUV3T9J7rLCvutTjW3G/yaoy8le0OdT/ypCitL+HOeb5nGtmFFBESQz3lY/nhhy+HfA8fdxushg0rp/xSQej5NqfvWajEIS7WjM7b+YKgFsrTFLZwcK5CmmWwtmCDdJH8F4v2+U/s/vgHu9//xvDbX9BxijzPOA2BTKDcHro8QpcHhCqFdztNX1H4GX4qWGRH8vbgAAAAAElFTkSuQmCC&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Create Web App&quot;
+        title=&quot;&quot;
+        src=&quot;/static/2a0c96b51d5e9046dc79f440f3dd3690/f058b/create-web-app.png&quot;
+        srcset=&quot;/static/2a0c96b51d5e9046dc79f440f3dd3690/c26ae/create-web-app.png 158w,
+/static/2a0c96b51d5e9046dc79f440f3dd3690/6bdcf/create-web-app.png 315w,
+/static/2a0c96b51d5e9046dc79f440f3dd3690/f058b/create-web-app.png 630w,
+/static/2a0c96b51d5e9046dc79f440f3dd3690/3c051/create-web-app.png 760w&quot;
+        sizes=&quot;(max-width: 630px) 100vw, 630px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+        decoding=&quot;async&quot;
+      /&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Under the Overview section of the App Service, note the URL listed under Essentials. We will need this when configuring the redirect URIs in the app registration.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Add a new app registration in Azure AD&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;In the Azure Portal, open Azure Active Directory&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 232px; &quot;
+    &gt;
+      &lt;a
+    class=&quot;gatsby-resp-image-link&quot;
+    href=&quot;/static/c46b3bbb9d992c3689635a3ba09b4afb/6a451/azure-ad.png&quot;
+    style=&quot;display: block&quot;
+    target=&quot;_blank&quot;
+    rel=&quot;noopener&quot;
+  &gt;
+    &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 63.92405063291139%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAANCAYAAACpUE5eAAAACXBIWXMAAAsTAAALEwEAmpwYAAACP0lEQVR42n2Ty27aQBSG8zDdxCQYX8Y2BhNowHZ9A4VrEIRAWqlSIyAoXBRFYlFeo4tuuu+rVOpD9Cn+6hwuRUnbxW/PmTPzzfwzZ05UVYWiKDg7O4MkSUilUkin09wmybLM8enpKTKZDHRdh6Zp/9QJDZ5MJthsNvxfLBYYDAZYrVZYLpd4enrCeDzGer1GHMcM/x/0hD5RFOHm5gbdbhfNZpMn9vt91Ov1g2iRYrHIQFVR2NVLkVsG0iCySiLr6fNzpCSJ23uR9UKhwFBWqbTVLi6VSjBNcwskC0KIrXQNmjAhhHHopzE0qVarIUkSJFGEJIxQjSMkccx91WoVOdveAl9KsmuQjQvoqsIx2cnn8wjDCEEQIvBcNL98R/L5K4JKGUEYcc6yrNdA2XyLN8WPkHL1Q98eGMUxQs9DdTjC7McvXH37iXfNPqLA59xroKpCz6QgaxYfvKZmoGn60Q5DuK4Lz3PhDz7AvR7BrVTgeR7nstljIMEsB8LxIfIV6CTL4RzdHgHpnKgaOp0Ouq0GetdtDIdDrg46R8syj4EKhH0Js9yBFbyH6fUgCsEBaNs2Wq0Wnp+fMZvN8On+HpPpFPP5HI+Pj1xapmnsgTrbo91Z/i2MchtmpQPzsgFNU6GoKhwnz9ba7TYeHh4YMp1OGX5Vr8P3fWSz2b9YLoQQFyGE40HkylugQkAHSRKj0Wig1+thNBphOLzF3d0dWi16DNEL4M62psg7ZXaX8idPNUm1uX//JHrflDMMg+Pf36LMYWWcZfAAAAAASUVORK5CYII=&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Azure AD&quot;
+        title=&quot;&quot;
+        src=&quot;/static/c46b3bbb9d992c3689635a3ba09b4afb/6a451/azure-ad.png&quot;
+        srcset=&quot;/static/c46b3bbb9d992c3689635a3ba09b4afb/c26ae/azure-ad.png 158w,
+/static/c46b3bbb9d992c3689635a3ba09b4afb/6a451/azure-ad.png 232w&quot;
+        sizes=&quot;(max-width: 232px) 100vw, 232px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+        decoding=&quot;async&quot;
+      /&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Under the Manage menu, open &quot;App registrations&quot; and click &quot;New registration&quot;&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 630px; &quot;
+    &gt;
+      &lt;a
+    class=&quot;gatsby-resp-image-link&quot;
+    href=&quot;/static/fa6eef74e4105b0eb1ca2c7473f1e70a/8ce22/new-app-registration.png&quot;
+    style=&quot;display: block&quot;
+    target=&quot;_blank&quot;
+    rel=&quot;noopener&quot;
+  &gt;
+    &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 75.31645569620254%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAPCAYAAADkmO9VAAAACXBIWXMAAAsTAAALEwEAmpwYAAAC9klEQVR42nWUe09bRxDFr5RKtQH7Pn3fvr6+D9+3cYgdEwoUCJFSKSRFQk2xDVX4/t/hV+0iVCq1fxzNzu7qzMzZmVXC5WdWZx/59vULV1dXXF9fc3l5ycnJCcvlktVyyXq9ZrVacXx8TNPUWJaFYRjomsZwOERVVTRNk1CsKMOfTMnSlCzLSJIE3/exbVteSLOcummpm4airPCCiCAIsB0X0xzh+wGe7zMa2ZiWhWL7E8IgxLRM9vb2ZMT9/X3G4zHn5+fM8ozz0w9cXZyxfv8OL4ypy5x4MsZxXbmui0z6ruuiWNOU+WJB17ZEUSRLOTg4oK5rnn784M0wZhAsGHo1qt9ghC1q0KIFHcZ4LveGfoMWdpjRIUoeHdLUHfP5HM/zZIa9Xo+yLNlttyijJVr5BWt2gZlfYpfXuPUnrNkVo+Kj9IV9OVMsP6asaqqqJM9zSSR0FBnudlt+GoSowZyBWzJwK4ZeJe2BU76y/6yVaTKVRKPRSMJxHHRdl4QPuw2K+pbJ8V8sLnfkx39Qn24kZiffqU7vn/HLPfXZhuLDd5RJWdN0HYahS/1eNKyqit3ugTc9nb4+Zk+P2DMielpIXw3oCyv2jYi+HkpfnClmXlO1HY5tS/0EoXhlQbjZbHAdm8VhR13O8D2HpmtZHL3l3WpJmiak04h5W9E1FW1dorhRQtu2NKLPigLTfG4fQbjdblFVjWmSEMdToklMnNekZUdSdkzSGXEck6SpvOO5HkqUBdRNLckEqdBOaChfebdjOFQJvDGe62AKSXQV09CfYRpyakQSAqI6xYtzqrqRZIJENLQoWfib+y1h7LC+WJAVHZYTYLkR5sj9l+avobhJQVFVskRRuhi/fr9PURZs/nzATn9m/puB5WY44wwnKhh5Y5ntS2avoVRHJyzfr5nNcsIwlNMi2ufo6IjHx0d6vT66ZqKrQzSJAbqmSln+C8qvn7/y7fdbbm9vubm5kfMrfpW7uzuenp7k1IjIum68gv6/hH8D9sqkTxF4mUcAAAAASUVORK5CYII=&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;New App Registration&quot;
+        title=&quot;&quot;
+        src=&quot;/static/fa6eef74e4105b0eb1ca2c7473f1e70a/f058b/new-app-registration.png&quot;
+        srcset=&quot;/static/fa6eef74e4105b0eb1ca2c7473f1e70a/c26ae/new-app-registration.png 158w,
+/static/fa6eef74e4105b0eb1ca2c7473f1e70a/6bdcf/new-app-registration.png 315w,
+/static/fa6eef74e4105b0eb1ca2c7473f1e70a/f058b/new-app-registration.png 630w,
+/static/fa6eef74e4105b0eb1ca2c7473f1e70a/8ce22/new-app-registration.png 685w&quot;
+        sizes=&quot;(max-width: 630px) 100vw, 630px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+        decoding=&quot;async&quot;
+      /&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Enter a name and select the supported account types. Also create a Redirect URI for &lt;code class=&quot;language-text&quot;&gt;https://localhost:5001/&lt;/code&gt; and ensure the type is set to &quot;Single-page application (SPA)&quot;. Click Register.&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 630px; &quot;
+    &gt;
+      &lt;a
+    class=&quot;gatsby-resp-image-link&quot;
+    href=&quot;/static/c7acdbc07dc7f312b58418796c3fbc74/f0685/register-an-application.png&quot;
+    style=&quot;display: block&quot;
+    target=&quot;_blank&quot;
+    rel=&quot;noopener&quot;
+  &gt;
+    &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 105.0632911392405%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAVCAYAAABG1c6oAAAACXBIWXMAAAsTAAALEwEAmpwYAAACYElEQVR42q2U2W7bMBBF9diXSCS1U9RKylu8JEptx42BvPUH+gH9nf71LWYaK2raoDHQh4MZUsCQc+eK3v0w4Pn5GdvtFofDAefzGafTCcYYCCEgpbwKL00S5HnOC6UUlFSQQkIEAkEQjJH4UMHeWSyWSxhTwJSGKcsSVV2hqkpe102NoiggpPgnnm0c7jb3+Hy/x8ItoNMCjWmYSlcodYWmbFHmJWKVvEtCMYzh5WkOo0voTDNJlED4EjKQUEJBifAlKkQqQijfR8kQnusdVqslZrMZVqsV2rZFnMRIkoSHMiIFAkE6CkglfyHla/6y9rSp0VkL23Xo+x7OOcznc45N0zBVVfHU6bA0TXHj34yDInzfH4fm6cLgcDxiGAa2y/F4xOPjI7Pf73mPIu1T3nUdH1DXNUcaIOUUySVelmXcKnF7ezu2TVaib9NI0LSnaK359hS5YJiWiPIGYaJZK9qkq1+0Yy9OtJy2evk29akXxQniJGWiMBo1ecvbAmT4qenHgqzdlxMOhz2ezk/ccj/rYZ3l6GYOi+UC1lp0XctDIknarmXtaHi0pv0oiuDN3RwPdw/YrLbYrXfYre84J7PvhwOG3YD1coNSlyiygo1PUJ6nmvUlixGsoc4KuK6HbR1jcoNYxujqjtdN1UIGvwweEmTiS66i3/TllinxA3/kYt7pHpn2vX/3j8eBX5gpUr2+PC9c9Xxd+959oCDdQP2/gkoKKOkjVBJhFP2dMPwwXtZuUCyfkDVrxHmDWHeIC4vEOMTGgv6kq25oz9+x+fYD1e4rgptPkDwEMeG6ln8CKEQYPkbe7h0AAAAASUVORK5CYII=&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Register an application&quot;
+        title=&quot;&quot;
+        src=&quot;/static/c7acdbc07dc7f312b58418796c3fbc74/f058b/register-an-application.png&quot;
+        srcset=&quot;/static/c7acdbc07dc7f312b58418796c3fbc74/c26ae/register-an-application.png 158w,
+/static/c7acdbc07dc7f312b58418796c3fbc74/6bdcf/register-an-application.png 315w,
+/static/c7acdbc07dc7f312b58418796c3fbc74/f058b/register-an-application.png 630w,
+/static/c7acdbc07dc7f312b58418796c3fbc74/f0685/register-an-application.png 835w&quot;
+        sizes=&quot;(max-width: 630px) 100vw, 630px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+        decoding=&quot;async&quot;
+      /&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;On the Overview screen for the app registration, you should see an Application (client) ID and Directory (tenant) ID. Make note of these as we&apos;ll need them later when we configure the web app for authentication.&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 630px; &quot;
+    &gt;
+      &lt;a
+    class=&quot;gatsby-resp-image-link&quot;
+    href=&quot;/static/bd65a535b37d48b00e0b2cf820cd6ce1/a242d/app-registration-overview.png&quot;
+    style=&quot;display: block&quot;
+    target=&quot;_blank&quot;
+    rel=&quot;noopener&quot;
+  &gt;
+    &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 41.139240506329116%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAICAYAAAD5nd/tAAAACXBIWXMAAAsTAAALEwEAmpwYAAABnklEQVR42kWRXXOiQBREeTfAMAPDh4iKCLiOgpg1ETVran3Z//+DzhZkzT6c6qnqe7t66lq6e/D6fuHzfud2u3G9Xkd9PB70fU8QaKRUeELgCoHneaM+8QbviSexgjAel4IgQCmF+Lc0qFI+SZwQhpphbhprlK8Jo4gkDokjjXAdhGMjXHt8W83x59jqfD7TdR1N09C0Lc3eIMM5UXUjLU+k9YW6/SBZv5NteurDL1bmQpAZgpnBnxlUusXavd34/XhwOp2oqgpjDMbsMD9qRLTmpfhDWH3iLS+4ix6xOONkb18671HFB/76TlDeEfkVazoNMDtDXddkWTZ+dzKZ8GLbKCmpq5KqqrFtB0coXBkh/BjhJ7iuwHac0Rt9x8VazVPyPCeKItI0xfd9pJRjcBiGlGXFYrkgSWLmy4LSHMk3LXFW4kk5zj4Zdqyi6eiOR7TWOI7zbQ5HGQKHhmW5pihWrIuc02tHs9+y3VT4SiK84Yj/seRsQXM4cGjbseUQ9AzUOiQvSnQ0xfV8ZtmSamNGNts9YTTFkwFS6W/+Amk72FKNJ6VZAAAAAElFTkSuQmCC&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;App registration overview&quot;
+        title=&quot;&quot;
+        src=&quot;/static/bd65a535b37d48b00e0b2cf820cd6ce1/f058b/app-registration-overview.png&quot;
+        srcset=&quot;/static/bd65a535b37d48b00e0b2cf820cd6ce1/c26ae/app-registration-overview.png 158w,
+/static/bd65a535b37d48b00e0b2cf820cd6ce1/6bdcf/app-registration-overview.png 315w,
+/static/bd65a535b37d48b00e0b2cf820cd6ce1/f058b/app-registration-overview.png 630w,
+/static/bd65a535b37d48b00e0b2cf820cd6ce1/a242d/app-registration-overview.png 724w&quot;
+        sizes=&quot;(max-width: 630px) 100vw, 630px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+        decoding=&quot;async&quot;
+      /&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Under the Authentication section, under Single-page application Redirect URIs, add a new URI for the URL of the App Service (i.e. &lt;code class=&quot;language-text&quot;&gt;https://myauthenticatedapp.azurewebsites.net/&lt;/code&gt;)&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 630px; &quot;
+    &gt;
+      &lt;a
+    class=&quot;gatsby-resp-image-link&quot;
+    href=&quot;/static/f66add0357c22233afd7ef0b1e83f4b3/3c492/redirect-uris.png&quot;
+    style=&quot;display: block&quot;
+    target=&quot;_blank&quot;
+    rel=&quot;noopener&quot;
+  &gt;
+    &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 46.202531645569614%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAJCAYAAAAywQxIAAAACXBIWXMAAAsTAAALEwEAmpwYAAABT0lEQVR42nWS226DMBBE+YFw8Q2MMeCAbWiEIrVp1cf8/09N5U2bKE3ycCQsi9mZWWd6cFiWBfM8I4SAaZqIcXTQWkMpBcbYU6qqeiCzbobWDXa7HfKiIJG2bdG2Blq3JFgUBcqyfPj52ZDM+wnOOXDOkOc5DocDTqcTjscjvPeIMWJdV6Lvexhj0HUdDb1z+Tsw294/sHeXeBdaimxMR2epFKSUBOf8jqtTLsG4ILLP7y+cz2dylHpMDrZtQ4wBXWfIuRQCUoqrcCJVodK3Uqh1B9UYMFEjs+NIsdLE1GPqMy4Lehfg/EoM0wI77NEZc438Rzob6lyTRjaGFcF76iMVL4SE9wExLrD9QNFTlKIs6f4lFQdTbRJc4MaBptV1jbrRmHyEUhKMXTYpBIcQ4ukz+b/1LKxvtE1rLRjjqBuBYbxFsvYWLUV69SYTKfIP3jzn+DwCkFAAAAAASUVORK5CYII=&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Add Redirect URI&quot;
+        title=&quot;&quot;
+        src=&quot;/static/f66add0357c22233afd7ef0b1e83f4b3/f058b/redirect-uris.png&quot;
+        srcset=&quot;/static/f66add0357c22233afd7ef0b1e83f4b3/c26ae/redirect-uris.png 158w,
+/static/f66add0357c22233afd7ef0b1e83f4b3/6bdcf/redirect-uris.png 315w,
+/static/f66add0357c22233afd7ef0b1e83f4b3/f058b/redirect-uris.png 630w,
+/static/f66add0357c22233afd7ef0b1e83f4b3/40601/redirect-uris.png 945w,
+/static/f66add0357c22233afd7ef0b1e83f4b3/78612/redirect-uris.png 1260w,
+/static/f66add0357c22233afd7ef0b1e83f4b3/3c492/redirect-uris.png 1300w&quot;
+        sizes=&quot;(max-width: 630px) 100vw, 630px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+        decoding=&quot;async&quot;
+      /&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Deploy to App Service&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;From project root: &lt;code class=&quot;language-text&quot;&gt;dotnet publish -c Release -o publish&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Using the Azure App Service extension in Visual Studio Code, right-click the publish folder and click &quot;Deploy to Web App&quot;. Select your newly created App Service and click &quot;Deploy&quot;&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 385px; &quot;
+    &gt;
+      &lt;a
+    class=&quot;gatsby-resp-image-link&quot;
+    href=&quot;/static/f6c4e67a92d3a4cf5bb02c6bcd1a3067/409e6/deploy-to-web-app.png&quot;
+    style=&quot;display: block&quot;
+    target=&quot;_blank&quot;
+    rel=&quot;noopener&quot;
+  &gt;
+    &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 117.72151898734178%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAYCAYAAAD6S912AAAACXBIWXMAAAsTAAALEwEAmpwYAAADsElEQVR42o2VyY4jRRRF/QssYIPUVFVmROTkHJx2Ouc5PZTtqgJ1N70A0dBIwI4lJX4KARKiYcWPXfSe20NXlRCLq4iw4t04b7A9UkphGk6RJRmiWYQ0TeE4DoQQUFJCSsn7/6uRdHyESYF2tUWz3KBeXMObJnimm7hQDi7VGLrlQTOfkvtII2V7cCcRwnmGMM7xiW5AUyaSvMI8KxHOE1wKA8IcQ5j2f0o3bIyk5WIa56i6JYpmQFI0MCwHN7d3WK6vsViuEIRTXAkJaZgQhgXBqwmh9tJZBu9HyjARBBMMfY+qrJDGCUzLZrOqbrFaX6Pre7heAGVaEFJBULA0IJUBirdsh2OkVBgp08YknGKz2aIfFijKCs7YZaP19QZN16Hpemy2O3i+z8FHg3eGnh+w2DAIJIoiRt8v0DQt2rZDOJ1hu91huV6jaTvsbm6xu7nBdnfDD213O14Nqh0RvxMber5EmkZsWNc1qqpm4iTNEM3nmEURkjRlAqLZi9JVvCdSysh2xkw88j2JPE+wWCzRNA3ahginGBYLDPRZ2+Lu08+Q5TkHW7YNw7RgmHtz2o9db29IhDNTRxSGSLOc6SjlYBIyFb18IDIti81oPTckKqop3aW0R0YYI05zdG2Hvh+QZTlcz+MmxUnKwUS2NzKPaZOR5G4rNvODyZ7QDGaYzuZsWNcN4jiB6/k8KtT1c5pT/Yz3DMfnhsYkQpIVaJsWZVmxaC6pJiRdyGPxyfxkfCKle1THY8ppXmK323GawzDwa1leIE0zHqWx60LTxdH8XIemUNrcZUGX6BXbYRlMY7E5zeLLl5+jrGpMZzPM44QNzlMmcmricbDJkKTrgldN0/llGpO8KFA3Dbp+YNKu64/zdiCkM2VElEfCc5ExFb6qayabRfNjurSemx1qSLUjUjo/MiRCSpu+u/R1i6I5B3G3z8blYdpESXeeJKRa0KDnRcmvHwivNJ3P+1Gyjl0/pP0kIRkaSqGpCpR5itWiR1uXrM16iTSOILQrKKEfZSoJxzL5L+OxoaaDfnQn+RJu3CHIFvCTDkE6ICxW8JIO0kvek/JTGJMC0vIeGEoD4uJjXFSvMf/5HxT3f2L84x9I7/9C+tNbpPdvcfn9b/jgq1/w0ZvfT/rmV3z43d941v7wkFBB1zRIZ4LVizfYvvoW5eYVutsvsHz+GsPdl1g+/xrJ8gWu/ApaUJ80aSHsyVM1lBC6gDd24Ltjro1tGXy2TROuY8P3xhDa5WPpGv4FGzb2TE3gSz4AAAAASUVORK5CYII=&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Deploy to App Service&quot;
+        title=&quot;&quot;
+        src=&quot;/static/f6c4e67a92d3a4cf5bb02c6bcd1a3067/409e6/deploy-to-web-app.png&quot;
+        srcset=&quot;/static/f6c4e67a92d3a4cf5bb02c6bcd1a3067/c26ae/deploy-to-web-app.png 158w,
+/static/f6c4e67a92d3a4cf5bb02c6bcd1a3067/6bdcf/deploy-to-web-app.png 315w,
+/static/f6c4e67a92d3a4cf5bb02c6bcd1a3067/409e6/deploy-to-web-app.png 385w&quot;
+        sizes=&quot;(max-width: 385px) 100vw, 385px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+        decoding=&quot;async&quot;
+      /&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;View the newly deployed web app with the URL provided in the Overview section of the App Service. It should look the same as when you ran the app locally.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Configure .NET Web API&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;Configure &lt;code class=&quot;language-text&quot;&gt;appsettings.json&lt;/code&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Add a new section titled &quot;AzureAd&quot;. Replace &lt;code class=&quot;language-text&quot;&gt;ENTER_CLIENT_ID_GUID_HERE&lt;/code&gt; with your Application (client) ID listed in the app registration in Azure AD, and replace &lt;code class=&quot;language-text&quot;&gt;ENTER_TENANT_ID_GUID_HERE&lt;/code&gt; with the Directory (tenant) ID.&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;json&quot;&gt;&lt;pre class=&quot;language-json&quot;&gt;&lt;code class=&quot;language-json&quot;&gt;&lt;span class=&quot;token property&quot;&gt;&quot;AzureAd&quot;&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token property&quot;&gt;&quot;Instance&quot;&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&quot;https://login.microsoftonline.com/&quot;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;token property&quot;&gt;&quot;ClientId&quot;&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&quot;ENTER_CLIENT_ID_GUID_HERE&quot;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;token property&quot;&gt;&quot;TenantId&quot;&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&quot;ENTER_TENANT_ID_GUID_HERE&quot;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;token property&quot;&gt;&quot;Audience&quot;&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&quot;ENTER_CLIENT_ID_GUID_HERE&quot;&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Install NuGet packages&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;dotnet add my-authenticated-app.csproj package Microsoft.AspNetCore.Authentication.JwtBearer&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;dotnet add my-authenticated-app.csproj package Microsoft.Identity.Web&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Setup &lt;code class=&quot;language-text&quot;&gt;Startup.cs&lt;/code&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Add the following uncommented code blocks:&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;ConfigureServices()&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;csharp&quot;&gt;&lt;pre class=&quot;language-csharp&quot;&gt;&lt;code class=&quot;language-csharp&quot;&gt;&lt;span class=&quot;token keyword&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;token return-type class-name&quot;&gt;&lt;span class=&quot;token keyword&quot;&gt;void&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;ConfigureServices&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token class-name&quot;&gt;IServiceCollection&lt;/span&gt; services&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//services.AddControllersWithViews();&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//services.AddSpaStaticFiles(configuration =&gt;&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//{&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//    configuration.RootPath = &quot;ClientApp/dist&quot;;&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//});&lt;/span&gt;
+
+    services&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;AddAuthentication&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;JwtBearerDefaults&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;AuthenticationScheme&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;AddMicrosoftIdentityWebApi&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;Configuration&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&quot;AzureAd&quot;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    services&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;AddAuthorization&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;token range operator&quot;&gt;..&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;Configure()&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;csharp&quot;&gt;&lt;pre class=&quot;language-csharp&quot;&gt;&lt;code class=&quot;language-csharp&quot;&gt;&lt;span class=&quot;token keyword&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;token return-type class-name&quot;&gt;&lt;span class=&quot;token keyword&quot;&gt;void&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;Configure&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token class-name&quot;&gt;IApplicationBuilder&lt;/span&gt; app&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token class-name&quot;&gt;IWebHostEnvironment&lt;/span&gt; env&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//if (env.IsDevelopment())&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//{&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//    app.UseDeveloperExceptionPage();&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//}&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//else&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//{&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//    app.UseExceptionHandler(&quot;/Error&quot;);&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//    app.UseHsts();&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//}&lt;/span&gt;
+
+    app&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;UseCors&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//app.UseHttpsRedirection();&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//app.UseStaticFiles();&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//if (!env.IsDevelopment())&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//{&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//    app.UseSpaStaticFiles();&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;//}&lt;/span&gt;
+
+    &lt;span class=&quot;token comment&quot;&gt;//app.UseRouting();&lt;/span&gt;
+    app&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;UseAuthentication&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    app&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;UseAuthorization&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+   
+    &lt;span class=&quot;token range operator&quot;&gt;..&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Add the &lt;code class=&quot;language-text&quot;&gt;Authorize&lt;/code&gt; attribute to &lt;code class=&quot;language-text&quot;&gt;WeatherController&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;csharp&quot;&gt;&lt;pre class=&quot;language-csharp&quot;&gt;&lt;code class=&quot;language-csharp&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;token attribute&quot;&gt;&lt;span class=&quot;token class-name&quot;&gt;Authorize&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;token comment&quot;&gt;//[ApiController]&lt;/span&gt;
+&lt;span class=&quot;token comment&quot;&gt;//[Route(&quot;[controller]&quot;)]&lt;/span&gt;
+&lt;span class=&quot;token comment&quot;&gt;//public class MyController : ControllerBase&lt;/span&gt;
+&lt;span class=&quot;token comment&quot;&gt;//{&lt;/span&gt;
+&lt;span class=&quot;token comment&quot;&gt;//}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Configure Angular app with MSAL&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;Install packages&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;From the &lt;code class=&quot;language-text&quot;&gt;ClientApp&lt;/code&gt; folder, run &lt;code class=&quot;language-text&quot;&gt;npm i msal @azure/msal-browser @azure/msal-angular&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Configure environment settings&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Replace &lt;code class=&quot;language-text&quot;&gt;ENTER_DEV_URL_HERE&lt;/code&gt; with your development URL (i.e. &quot;&lt;a href=&quot;https://localhost:5001/&quot;&gt;https://localhost:5001/&lt;/a&gt;&quot;)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Replace &lt;code class=&quot;language-text&quot;&gt;ENTER_PUBLIC_URL_HERE&lt;/code&gt; with the App Service&apos;s URL (i.e. &quot;&lt;a href=&quot;https://myauthenticatedapp.azurewebsites.net/&quot;&gt;https://myauthenticatedapp.azurewebsites.net/&lt;/a&gt;&quot;)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Replace &lt;code class=&quot;language-text&quot;&gt;ENTER_CLIENT_ID_GUID_HERE&lt;/code&gt; with the client ID from the app registration&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Replace &lt;code class=&quot;language-text&quot;&gt;ENTER_TENANT_NAME_HERE&lt;/code&gt; with the tenant name. This can be found in the Azure portal URL when viewing the App Service page (&quot;&lt;a href=&quot;https://portal.azure.com/#@YOUR_TENANT_NAME.onmicrosoft.com/resource/subscriptions/and-so-on&quot;&gt;https://portal.azure.com/#@YOUR_TENANT_NAME.onmicrosoft.com/resource/subscriptions/and-so-on&lt;/a&gt;&quot;)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;environment.ts&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;ts&quot;&gt;&lt;pre class=&quot;language-ts&quot;&gt;&lt;code class=&quot;language-ts&quot;&gt;&lt;span class=&quot;token keyword&quot;&gt;export&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;const&lt;/span&gt; environment &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+  production&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token boolean&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+  redirectUrl&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;ENTER_DEV_URL_HERE&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+  clientId&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;ENTER_CLIENT_ID_GUID_HERE&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+  tenantName&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;ENTER_TENANT_NAME_HERE&apos;&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;environment.prod.ts&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;ts&quot;&gt;&lt;pre class=&quot;language-ts&quot;&gt;&lt;code class=&quot;language-ts&quot;&gt;&lt;span class=&quot;token keyword&quot;&gt;export&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;const&lt;/span&gt; environment &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+  production&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token boolean&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+  redirectUrl&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;ENTER_PUBLIC_URL_HERE&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+  clientId&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;ENTER_CLIENT_ID_GUID_HERE&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+  tenantName&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;ENTER_TENANT_NAME_HERE&apos;&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Configure MSAL in &lt;code class=&quot;language-text&quot;&gt;app.module.ts&lt;/code&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Add the following imports, functions, and module imports, providers, and bootstraps&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;ts&quot;&gt;&lt;pre class=&quot;language-ts&quot;&gt;&lt;code class=&quot;language-ts&quot;&gt;&lt;span class=&quot;token operator&quot;&gt;...&lt;/span&gt;
+&lt;span class=&quot;token keyword&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;HTTP_INTERCEPTORS&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;@angular/common/http&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;token keyword&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; IPublicClientApplication&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; PublicClientApplication&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; InteractionType&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; BrowserCacheLocation&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; LogLevel &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;@azure/msal-browser&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;token keyword&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; MsalGuard&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; MsalInterceptor&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; MsalBroadcastService&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; MsalInterceptorConfiguration&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; MsalModule&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; MsalService&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;MSAL_GUARD_CONFIG&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;MSAL_INSTANCE&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;MSAL_INTERCEPTOR_CONFIG&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; MsalGuardConfiguration&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; MsalRedirectComponent &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;@azure/msal-angular&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;token keyword&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; environment &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;../environments/environment&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;token keyword&quot;&gt;const&lt;/span&gt; isIE &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; window&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;navigator&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;userAgent&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;indexOf&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;&quot;MSIE &quot;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token operator&quot;&gt;&gt;&lt;/span&gt; &lt;span class=&quot;token operator&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;token number&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;token operator&quot;&gt;||&lt;/span&gt; window&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;navigator&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;userAgent&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;indexOf&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;&quot;Trident/&quot;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token operator&quot;&gt;&gt;&lt;/span&gt; &lt;span class=&quot;token operator&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;token number&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;token comment&quot;&gt;// Remove this line to use Angular Universal&lt;/span&gt;
+
+&lt;span class=&quot;token keyword&quot;&gt;export&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;loggerCallback&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;logLevel&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; LogLevel&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; message&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token builtin&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;token builtin&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;message&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;token keyword&quot;&gt;export&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;MSALInstanceFactory&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; IPublicClientApplication &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;token keyword&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;token class-name&quot;&gt;PublicClientApplication&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    auth&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+      clientId&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; environment&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;clientId&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+      authority&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token template-string&quot;&gt;&lt;span class=&quot;token template-punctuation string&quot;&gt;`&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;https://login.microsoftonline.com/&lt;/span&gt;&lt;span class=&quot;token interpolation&quot;&gt;&lt;span class=&quot;token interpolation-punctuation punctuation&quot;&gt;${&lt;/span&gt;environment&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;tenantName&lt;span class=&quot;token interpolation-punctuation punctuation&quot;&gt;}&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;.onmicrosoft.com/&lt;/span&gt;&lt;span class=&quot;token template-punctuation string&quot;&gt;`&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+      redirectUri&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; environment&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;redirectUrl
+    &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    cache&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+      cacheLocation&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; BrowserCacheLocation&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;LocalStorage&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+      storeAuthStateInCookie&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; isIE&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token comment&quot;&gt;// set to true for IE 11&lt;/span&gt;
+    &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    system&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+      loggerOptions&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+        loggerCallback&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+        logLevel&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; LogLevel&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;Info&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+        piiLoggingEnabled&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token boolean&quot;&gt;false&lt;/span&gt;
+      &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;token keyword&quot;&gt;export&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;MSALInterceptorConfigFactory&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; MsalInterceptorConfiguration &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;token keyword&quot;&gt;const&lt;/span&gt; protectedResourceMap &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;token class-name&quot;&gt;Map&lt;span class=&quot;token operator&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;token builtin&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token builtin&quot;&gt;Array&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;token builtin&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;&gt;&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  protectedResourceMap&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;set&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token template-string&quot;&gt;&lt;span class=&quot;token template-punctuation string&quot;&gt;`&lt;/span&gt;&lt;span class=&quot;token interpolation&quot;&gt;&lt;span class=&quot;token interpolation-punctuation punctuation&quot;&gt;${&lt;/span&gt;environment&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;redirectUrl&lt;span class=&quot;token interpolation-punctuation punctuation&quot;&gt;}&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;weatherforecast&lt;/span&gt;&lt;span class=&quot;token template-punctuation string&quot;&gt;`&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;token template-string&quot;&gt;&lt;span class=&quot;token template-punctuation string&quot;&gt;`&lt;/span&gt;&lt;span class=&quot;token interpolation&quot;&gt;&lt;span class=&quot;token interpolation-punctuation punctuation&quot;&gt;${&lt;/span&gt;environment&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;clientId&lt;span class=&quot;token interpolation-punctuation punctuation&quot;&gt;}&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;/.default&lt;/span&gt;&lt;span class=&quot;token template-punctuation string&quot;&gt;`&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+  &lt;span class=&quot;token keyword&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    interactionType&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; InteractionType&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;Redirect&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    protectedResourceMap
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;token keyword&quot;&gt;export&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;MSALGuardConfigFactory&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; MsalGuardConfiguration &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;token keyword&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    interactionType&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; InteractionType&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;Redirect&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    authRequest&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+      scopes&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;token template-string&quot;&gt;&lt;span class=&quot;token template-punctuation string&quot;&gt;`&lt;/span&gt;&lt;span class=&quot;token interpolation&quot;&gt;&lt;span class=&quot;token interpolation-punctuation punctuation&quot;&gt;${&lt;/span&gt;environment&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;clientId&lt;span class=&quot;token interpolation-punctuation punctuation&quot;&gt;}&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;/.default&lt;/span&gt;&lt;span class=&quot;token template-punctuation string&quot;&gt;`&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;token decorator&quot;&gt;&lt;span class=&quot;token at operator&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;NgModule&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+  imports&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;[&lt;/span&gt;
+    &lt;span class=&quot;token operator&quot;&gt;...&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    MsalModule
+  &lt;span class=&quot;token punctuation&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+  providers&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;[&lt;/span&gt;
+    &lt;span class=&quot;token operator&quot;&gt;...&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+      provide&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;HTTP_INTERCEPTORS&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+      useClass&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; MsalInterceptor&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+      multi&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token boolean&quot;&gt;true&lt;/span&gt;
+    &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+      provide&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;MSAL_INSTANCE&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+      useFactory&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; MSALInstanceFactory
+    &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+      provide&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;MSAL_GUARD_CONFIG&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+      useFactory&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; MSALGuardConfigFactory
+    &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+      provide&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;MSAL_INTERCEPTOR_CONFIG&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+      useFactory&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; MSALInterceptorConfigFactory
+    &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    MsalService&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    MsalGuard&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    MsalBroadcastService
+  &lt;span class=&quot;token punctuation&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+  bootstrap&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;[&lt;/span&gt;
+    &lt;span class=&quot;token operator&quot;&gt;...&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    MsalRedirectComponent
+  &lt;span class=&quot;token punctuation&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;token keyword&quot;&gt;export&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;token class-name&quot;&gt;AppModule&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Create an auth service&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;From the &lt;code class=&quot;language-text&quot;&gt;ClientApp&lt;/code&gt; folder, run &lt;code class=&quot;language-text&quot;&gt;ng g s auth&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;auth.service.ts&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;ts&quot;&gt;&lt;pre class=&quot;language-ts&quot;&gt;&lt;code class=&quot;language-ts&quot;&gt;&lt;span class=&quot;token keyword&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; Inject&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; Injectable &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;@angular/core&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;token keyword&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; MsalService&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; MsalBroadcastService&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;MSAL_GUARD_CONFIG&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; MsalGuardConfiguration &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;@azure/msal-angular&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;token keyword&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; AccountInfo&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; AuthenticationResult&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; InteractionStatus&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; InteractionType&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; PopupRequest&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; RedirectRequest &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;@azure/msal-browser&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;token keyword&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; Subject &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;rxjs&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;token keyword&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; filter&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; takeUntil &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;rxjs/operators&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;token decorator&quot;&gt;&lt;span class=&quot;token at operator&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;Injectable&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+  providedIn&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;root&apos;&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;token keyword&quot;&gt;export&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;token class-name&quot;&gt;AuthService&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+  loggedIn &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token boolean&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;token keyword&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;readonly&lt;/span&gt; _destroying$ &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;token class-name&quot;&gt;Subject&lt;span class=&quot;token operator&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;token keyword&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+  &lt;span class=&quot;token function&quot;&gt;constructor&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;token decorator&quot;&gt;&lt;span class=&quot;token at operator&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;Inject&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token constant&quot;&gt;MSAL_GUARD_CONFIG&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;private&lt;/span&gt; msalGuardConfig&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; MsalGuardConfiguration&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;private&lt;/span&gt; authService&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; MsalService&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;private&lt;/span&gt; msalBroadcastService&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; MsalBroadcastService&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;token function&quot;&gt;updateLoggedInStatus&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;msalBroadcastService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;inProgress$
+      &lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;pipe&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;token function&quot;&gt;filter&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;status&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; InteractionStatus&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token operator&quot;&gt;=&gt;&lt;/span&gt; status &lt;span class=&quot;token operator&quot;&gt;===&lt;/span&gt; InteractionStatus&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;None&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;token function&quot;&gt;takeUntil&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;_destroying$&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;
+      &lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;
+      &lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;subscribe&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token operator&quot;&gt;=&gt;&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;setLoggedIn&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;checkAndSetActiveAccount&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;token function&quot;&gt;login&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;msalGuardConfig&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;interactionType &lt;span class=&quot;token operator&quot;&gt;===&lt;/span&gt; InteractionType&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;Popup&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;loginWithPopup&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;loginWithRedirect&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;token function&quot;&gt;getActiveAccount&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; AccountInfo &lt;span class=&quot;token operator&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;null&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;instance&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;getActiveAccount&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;token keyword&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;checkAndSetActiveAccount&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token comment&quot;&gt;/**
+    * If no active account set but there are accounts signed in, sets first account to active account
+    * To use active account set here, subscribe to inProgress$ first in your component
+    * Note: Basic usage demonstrated. Your app may require more complicated account selection logic
+    */&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;let&lt;/span&gt; activeAccount &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;instance&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;getActiveAccount&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;token keyword&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;!&lt;/span&gt;activeAccount &lt;span class=&quot;token operator&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;instance&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;getAllAccounts&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;length &lt;span class=&quot;token operator&quot;&gt;&gt;&lt;/span&gt; &lt;span class=&quot;token number&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;token keyword&quot;&gt;let&lt;/span&gt; accounts &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;instance&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;getAllAccounts&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;instance&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;setActiveAccount&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;accounts&lt;span class=&quot;token punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;token number&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;token keyword&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;setLoggedIn&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;loggedIn &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;instance&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;getAllAccounts&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;length &lt;span class=&quot;token operator&quot;&gt;&gt;&lt;/span&gt; &lt;span class=&quot;token number&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;token keyword&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;loginWithPopup&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;msalGuardConfig&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authRequest&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;loginPopup&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;token operator&quot;&gt;...&lt;/span&gt;&lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;msalGuardConfig&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authRequest &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;as&lt;/span&gt; PopupRequest&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;subscribe&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;response&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; AuthenticationResult&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token operator&quot;&gt;=&gt;&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;instance&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;setActiveAccount&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;response&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;account&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;loginPopup&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;subscribe&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;response&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; AuthenticationResult&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token operator&quot;&gt;=&gt;&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;instance&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;setActiveAccount&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;response&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;account&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;token keyword&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;loginWithRedirect&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;msalGuardConfig&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authRequest&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;loginRedirect&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;token operator&quot;&gt;...&lt;/span&gt;&lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;msalGuardConfig&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authRequest &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;as&lt;/span&gt; RedirectRequest&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;loginRedirect&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;token function&quot;&gt;logout&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;logout&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;token function&quot;&gt;destroy&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;_destroying$&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;next&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token keyword&quot;&gt;undefined&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;_destroying$&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;complete&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Add the &lt;code class=&quot;language-text&quot;&gt;app-redirect&lt;/code&gt; component to &lt;code class=&quot;language-text&quot;&gt;index.html&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;html&quot;&gt;&lt;pre class=&quot;language-html&quot;&gt;&lt;code class=&quot;language-html&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;body&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+  &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;app-root&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;Loading...&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;app-root&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+  &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;app-redirect&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;app-redirect&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;body&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Implement &lt;code class=&quot;language-text&quot;&gt;AuthService&lt;/code&gt; in the &lt;code class=&quot;language-text&quot;&gt;AppComponent&lt;/code&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;app.component.ts&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;ts&quot;&gt;&lt;pre class=&quot;language-ts&quot;&gt;&lt;code class=&quot;language-ts&quot;&gt;&lt;span class=&quot;token keyword&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; Component&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; OnInit &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;@angular/core&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;token keyword&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; AuthService &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;./auth.service&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;token decorator&quot;&gt;&lt;span class=&quot;token at operator&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;Component&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+  selector&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;app-root&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+  templateUrl&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;./app.component.html&apos;&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;token keyword&quot;&gt;export&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;token class-name&quot;&gt;AppComponent&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;implements&lt;/span&gt; &lt;span class=&quot;token class-name&quot;&gt;OnInit&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+  title &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;app&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+  &lt;span class=&quot;token function&quot;&gt;constructor&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token keyword&quot;&gt;public&lt;/span&gt; authService&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; AuthService&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;token function&quot;&gt;ngOnInit&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;updateLoggedInStatus&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;token function&quot;&gt;login&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;login&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;token function&quot;&gt;logout&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;authService&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;logout&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;app.component.html&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;html&quot;&gt;&lt;pre class=&quot;language-html&quot;&gt;&lt;code class=&quot;language-html&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;body&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+  &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;app-nav-menu&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;[loggedIn]&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;authService.loggedIn&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;(loginClicked)&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;login()&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;(logoutClicked)&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;logout()&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;app-nav-menu&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+  &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;div&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;container&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+    &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;router-outlet&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;router-outlet&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+  &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;div&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;body&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Update the &lt;code class=&quot;language-text&quot;&gt;NavMenuComponent&lt;/code&gt; with login/logout buttons&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;nav-menu.component.ts&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;ts&quot;&gt;&lt;pre class=&quot;language-ts&quot;&gt;&lt;code class=&quot;language-ts&quot;&gt;&lt;span class=&quot;token keyword&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; Component&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; EventEmitter&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; Input&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; Output &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;@angular/core&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;token decorator&quot;&gt;&lt;span class=&quot;token at operator&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;Component&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+  selector&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;app-nav-menu&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+  templateUrl&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&apos;./nav-menu.component.html&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+  styleUrls&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;&apos;./nav-menu.component.css&apos;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;token keyword&quot;&gt;export&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;token class-name&quot;&gt;NavMenuComponent&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+  isExpanded &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token boolean&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;token decorator&quot;&gt;&lt;span class=&quot;token at operator&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;Input&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; loggedIn&lt;span class=&quot;token operator&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;token builtin&quot;&gt;boolean&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;token decorator&quot;&gt;&lt;span class=&quot;token at operator&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;Output&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; loginClicked &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;token class-name&quot;&gt;EventEmitter&lt;span class=&quot;token operator&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;token keyword&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;token decorator&quot;&gt;&lt;span class=&quot;token at operator&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;Output&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; logoutClicked &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;token class-name&quot;&gt;EventEmitter&lt;span class=&quot;token operator&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;token keyword&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+  &lt;span class=&quot;token function&quot;&gt;collapse&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;isExpanded &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token boolean&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;token function&quot;&gt;toggle&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;isExpanded &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token operator&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;isExpanded&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;token function&quot;&gt;login&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;loginClicked&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;emit&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;token function&quot;&gt;logout&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;token keyword&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;logoutClicked&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;emit&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;nav-menu.component.html&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;html&quot;&gt;&lt;pre class=&quot;language-html&quot;&gt;&lt;code class=&quot;language-html&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;header&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+  &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;nav&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+    &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;div&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;container&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+      &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;a&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;navbar-brand&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;[routerLink]&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;[&apos;/&apos;]&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;my_authenticated_app&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;a&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+      &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;button&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;navbar-toggler&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;type&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;button&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;data-toggle&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;collapse&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;data-target&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;.navbar-collapse&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;
+        &lt;span class=&quot;token attr-name&quot;&gt;aria-label&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;Toggle navigation&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;[attr.aria-expanded]&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;isExpanded&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;(click)&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;toggle()&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+        &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;span&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;navbar-toggler-icon&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;span&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+      &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;button&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+      &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;div&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;navbar-collapse collapse d-sm-inline-flex justify-content-end&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;[ngClass]&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;{ show: isExpanded }&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+        &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;ul&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;navbar-nav flex-grow&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+          &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;li&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;nav-item&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;[routerLinkActive]&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;[&apos;link-active&apos;]&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;[routerLinkActiveOptions]&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;{ exact: true }&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+            &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;a&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;nav-link text-dark&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;[routerLink]&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;[&apos;/&apos;]&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;Home&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;a&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+          &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;li&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+          &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;li&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;nav-item&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;[routerLinkActive]&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;[&apos;link-active&apos;]&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+            &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;a&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;nav-link text-dark&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;[routerLink]&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;[&apos;/counter&apos;]&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;Counter&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;a&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+          &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;li&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+          &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;li&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;nav-item&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;[routerLinkActive]&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;[&apos;link-active&apos;]&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+            &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;a&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;nav-link text-dark&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;[routerLink]&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;[&apos;/fetch-data&apos;]&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;Fetch data&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;a&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+          &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;li&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+          &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;li&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+            &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;button&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;btn btn-primary&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;(click)&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;login()&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;*ngIf&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;!loggedIn&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;Login&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;button&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+            &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;&lt;/span&gt;button&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;btn btn-primary&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;(click)&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;logout()&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt; &lt;span class=&quot;token attr-name&quot;&gt;*ngIf&lt;/span&gt;&lt;span class=&quot;token attr-value&quot;&gt;&lt;span class=&quot;token punctuation attr-equals&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;loggedIn&lt;span class=&quot;token punctuation&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;Logout&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;button&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+          &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;li&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+        &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;ul&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+      &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;div&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+    &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;div&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+  &lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;nav&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token tag&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;&amp;lt;/&lt;/span&gt;header&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Run the app and test authentication&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;When viewing the Fetch Data page, if you are not logged in, you will be redirected to the Microsoft login screen. If you are not redirected, click the Login button.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;When logging in for the first time, you will need to approve the app&apos;s permissions&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 476px; &quot;
+    &gt;
+      &lt;a
+    class=&quot;gatsby-resp-image-link&quot;
+    href=&quot;/static/cf21b18c342b9dd04d9add3d0863ea75/f2205/permissions-requested.png&quot;
+    style=&quot;display: block&quot;
+    target=&quot;_blank&quot;
+    rel=&quot;noopener&quot;
+  &gt;
+    &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 129.1139240506329%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAaCAYAAAC3g3x9AAAACXBIWXMAAAsTAAALEwEAmpwYAAADW0lEQVR42q1VyW4qVxT0B2SXT8kmX5VVviFSVpHyA5EiRdl6kbyFn2WwbJ6fk24IGAwGAz3Rt29PmKmZqagOw8OJrQxyS6XTfZtbt06dc+gT5ViIdYAo8BFpH6FWnxAGCKPn0EQcIDhACVSs0PHaOCHZW1ybzQa2b5FQyULQ/ADHzSNJBnh6ekIcx1iv1/+dMNoR1uwmlHeNMEwRhhpa6/9B2H3rlLtUuCUcDAYYDgfIsgyTyUQwnU4xn88xm80k8pnrvP9Hwnq9jsvLS1xfX+Pi4gK5XA5XV1e4u7vD2dmZgOunp6fy2z3J3whDrWVB6wCd9iNs20K32xU0Gg34vi/vl8ulbNrjmOhFwoajUag8otxyEYahoNfrSfyrmtc8dLaE2w3DcYZkMMEom2GSZeLTYrGQSN+GwyHG47GAftNr3lP5M0K9U8hWeWy10GjUUavV0Gw2Ydu2oFqtolwui3e04f7+Hg8PD/LMw3itDwp3KfFU+sXnKIoQBIGkTBX/tm22CneEq8UMWitYliVEjuMISMwDRqPRYeNxYY6jq7o4CcJIFvzBBkE6QRKHojZJEhk/goQcR/Yje5ET9BKxR0Klt4Q/l4Gr1hSjNEQcJ0LI9EnIA/ZVp+er1erFlL1jhdNsgtFwIJsJKtorTdNUwDXG/UFEv98/KO0dE3Y6HRQKBZmOYrGIm5sb5PN5mKYp1WRlWX1Wm9PDyvMd19hevHaE8bYPh0NJh2AhGJVS4hlT5KbFcin+7fuTcZ8+FfrBkULbcWAYhigolUoSb29vJZqGAdP4DeWiiaJpwjBNUUmFPFT6cL3eEqqdwna7LQRMoVKpyIbfDQN/lEooVeso1pr4WG6g2mghTRLMZgtk8m+0eK5QRYks0Hz2neu6Mh1sct57rgMvHqCTLmH1F4gmq1cbW2mmvCOkV2xeesnIkWKV+/1U5jwdz2XOk9EM0WgOPdyC9/MVe3GDQHc+Eb500XRacH7+Hr++e4eycYOf8lV8/nUOX3xTwJfffsRnX73HL5VwV2USxq8T0mj2HC3odLsIAx81O8L3OQc/fPDw400P351baEfZ9kMXCGH6Zt8UzZTbrg/bD+D4Co5ScA/w4Ql68HxX0FMuPOXC9W14Aguub0EpC0HQhfIf8CdVIavgbs2XrAAAAABJRU5ErkJggg==&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Permissions requested&quot;
+        title=&quot;&quot;
+        src=&quot;/static/cf21b18c342b9dd04d9add3d0863ea75/f2205/permissions-requested.png&quot;
+        srcset=&quot;/static/cf21b18c342b9dd04d9add3d0863ea75/c26ae/permissions-requested.png 158w,
+/static/cf21b18c342b9dd04d9add3d0863ea75/6bdcf/permissions-requested.png 315w,
+/static/cf21b18c342b9dd04d9add3d0863ea75/f2205/permissions-requested.png 476w&quot;
+        sizes=&quot;(max-width: 476px) 100vw, 476px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+        decoding=&quot;async&quot;
+      /&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;After successfully logging in, refresh the Fetch Data page. The weather data should load.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Redeploy to App Service&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;Following the same steps as before, publish the web app and deploy it to the App Service.&lt;/li&gt;
+&lt;li&gt;Load the webpage and verify the authentication works.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Things to Consider&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;For security purposes, you can configure the &lt;code class=&quot;language-text&quot;&gt;appsettings.json&lt;/code&gt; settings in the Configuration section in the App Service instead. This way, you aren&apos;t committing the client and tenant IDs in source control.&lt;/li&gt;
+&lt;li&gt;For each API endpoint you want to secure, add the &lt;code class=&quot;language-text&quot;&gt;Authorize&lt;/code&gt; attribute to the controller and add a new entry to the &lt;code class=&quot;language-text&quot;&gt;protectedResourceMap&lt;/code&gt; in &lt;code class=&quot;language-text&quot;&gt;app.module.ts&lt;/code&gt; with the given endpoint.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Conclusion&lt;/h2&gt;
+&lt;p&gt;Authentication can be tricky, but with the &lt;code class=&quot;language-text&quot;&gt;msal-angular&lt;/code&gt; package and the Microsoft Identity platform it&apos;s rather easy. With these libraries handling the technical details, we just have to handle the configuration.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Differences between Traditional and Event-Driven Systems]]></title><description><![CDATA[Application state is often treated like food in a fridge. If we need something, we take it out, use what we need, and put it back. The same…]]></description><link>https://blog.adamswanson.dev/event-driven-systems/</link><guid isPermaLink="false">https://blog.adamswanson.dev/event-driven-systems/</guid><pubDate>Fri, 05 Mar 2021 20:00:00 GMT</pubDate><content:encoded>&lt;span class=&quot;gatsby-resp-image-wrapper&quot; style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 630px; &quot;&gt;
+      &lt;a class=&quot;gatsby-resp-image-link&quot; href=&quot;/static/cacf107e5b8da03a633cbf77175905c7/0f98f/fridge.jpg&quot; style=&quot;display: block&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;
+    &lt;span class=&quot;gatsby-resp-image-background-image&quot; style=&quot;padding-bottom: 66.45569620253164%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/jpeg;base64,/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wgARCAANABQDASIAAhEBAxEB/8QAFwABAQEBAAAAAAAAAAAAAAAAAAMBBP/EABUBAQEAAAAAAAAAAAAAAAAAAAAB/9oADAMBAAIQAxAAAAHhQlBiv//EABwQAAEDBQAAAAAAAAAAAAAAAAIAARMDEBESIf/aAAgBAQABBQI8R1tY0T8t/8QAFBEBAAAAAAAAAAAAAAAAAAAAEP/aAAgBAwEBPwE//8QAFBEBAAAAAAAAAAAAAAAAAAAAEP/aAAgBAgEBPwE//8QAGRAAAgMBAAAAAAAAAAAAAAAAAREAAhAh/9oACAEBAAY/AqyiCK7g3//EABwQAQACAQUAAAAAAAAAAAAAAAEAERAxQVFxwf/aAAgBAQABPyHatHyAV6DtLOIlUVcf/9oADAMBAAIAAwAAABAsH//EABQRAQAAAAAAAAAAAAAAAAAAABD/2gAIAQMBAT8QP//EABQRAQAAAAAAAAAAAAAAAAAAABD/2gAIAQIBAT8QP//EABwQAQACAgMBAAAAAAAAAAAAAAERMQAhEEGBsf/aAAgBAQABPxBLalR1dsfGgZai8ANz9jCdSX5ggKoUTx//2Q==&apos;); background-size: cover; display: block;&quot;&gt;&lt;/span&gt;
+  &lt;img class=&quot;gatsby-resp-image-image&quot; alt=&quot;Fridge&quot; title=&quot;&quot; src=&quot;/static/cacf107e5b8da03a633cbf77175905c7/828fb/fridge.jpg&quot; srcset=&quot;/static/cacf107e5b8da03a633cbf77175905c7/ff44c/fridge.jpg 158w,
+/static/cacf107e5b8da03a633cbf77175905c7/a6688/fridge.jpg 315w,
+/static/cacf107e5b8da03a633cbf77175905c7/828fb/fridge.jpg 630w,
+/static/cacf107e5b8da03a633cbf77175905c7/0ede0/fridge.jpg 945w,
+/static/cacf107e5b8da03a633cbf77175905c7/3ac88/fridge.jpg 1260w,
+/static/cacf107e5b8da03a633cbf77175905c7/0f98f/fridge.jpg 1920w&quot; sizes=&quot;(max-width: 630px) 100vw, 630px&quot; style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot; loading=&quot;lazy&quot; decoding=&quot;async&quot;&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;
+&lt;p&gt;Application state is often treated like food in a fridge. If we need something, we take it out, use what we need, and put it back. The same is usually done with data: we read the data we need, manipulate it, and write it back to the same place.&lt;/p&gt;
+&lt;p&gt;This approach has its advantages: managing data becomes very simple. Data can be read from, say, a database, and it can be updated in the same format and in the same place. However, there are downsides: the app&apos;s state becomes one big blob of data. Sure, it&apos;s structured and organized, but how did it get to its current state? There&apos;s no record of the steps it took to get there. All we know is we have data.&lt;/p&gt;
+&lt;p&gt;Let&apos;s use accounting as an example. Say we spend $10. How do we update our balance? Do we take our current balance, remove $10, and update it? If we did that, we would have no way of tracking our account history. Instead, we add a record of it in our account ledger. To get the new balance, we add up all the transactions in the ledger. We never update the balance directly.&lt;/p&gt;
+&lt;p&gt;There are a few key differences here. The first is how the balance is defined. The naive approach is to treat it as a value that can be changed at-will. A better approach is to treat it as the result of changes. The second is the distinction between updating and reading. In the first approach, we write to the balance by updating a single value, and to get the balance we read that same value. In the second approach, we write by appending a new change to a log, and we read by adding up all of those changes.&lt;/p&gt;
+&lt;p&gt;Event-driven systems introduce these same differences. If we treat each change to the system as an event (like &lt;code class=&quot;language-text&quot;&gt;EmailChanged&lt;/code&gt; or &lt;code class=&quot;language-text&quot;&gt;ItemAddedToCart&lt;/code&gt;) and store these events, we can add them up to get our app&apos;s state. A common example is a version control system like Git. Each change is represented as a commit, and by adding up all the commits we can produce the codebase.&lt;/p&gt;
+&lt;p&gt;By storing each change like this, we get several advantages. One advantage is we can represent the app&apos;s state in any form we want. If we want to use a database, JSON, or something in memory, we can build up a model of the app&apos;s state from the events. In fact, we could have several models. Another advantage is we can see all the changes that were made to the system. Log messages can be helpful, but they don&apos;t often include all the necessary details to understand what&apos;s going on. Events, on the other hand, have all the details already baked in.&lt;/p&gt;
+&lt;p&gt;When implementing an event-driven system, the app&apos;s architecture must be updated to support an event-driven approach. If a change is made, one can no longer reach into the data and update it themselves. Instead, they simply raise an event with the details of what needs to be changed. This event is then stored and processed by an event handler that can build up a model of the app&apos;s state in, say, a database. This database can then be used to read the app&apos;s state without needing to touch any events.&lt;/p&gt;
+&lt;p&gt;There are several pros to event-driven systems. First, they provide a log of every change made to the system. These are represented in the events. Second, they give the ability to see what the state was at any point in time. This can be done by building up a model of the app&apos;s state from the events up to a certain time. Third, the app state can be rebuilt from the events at any time.&lt;/p&gt;
+&lt;p&gt;The biggest con to event-driven systems is complexity. It becomes harder to follow the flow of control through the system when most of it happens in event handlers. By raising an event, you don&apos;t know what, if anything, will handle that event. It is up to a handler, somewhere, to be watching for it. This is much harder to follow than a simple call like &lt;code class=&quot;language-text&quot;&gt;cartService.addItem()&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Keep these differences in mind when considering an event-driven architecture for your next project. Not all projects will benefit from this approach, but if the pros outweigh the cons, it may be a good choice.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Updating the .NET Core Angular template from Angular 8 to 10]]></title><description><![CDATA[Creating a new .NET Core project with the Angular template is pretty handy, but it starts you out on Angular 8. The upgrade process to…]]></description><link>https://blog.adamswanson.dev/angular-upgrade/</link><guid isPermaLink="false">https://blog.adamswanson.dev/angular-upgrade/</guid><pubDate>Thu, 14 Jan 2021 21:00:00 GMT</pubDate><content:encoded>&lt;p&gt;Creating a new .NET Core project with the Angular template is pretty handy, but it starts you out on Angular 8. The upgrade process to version 10 is not very straightforward and can cause some serious headaches if you&apos;re not sure what to look out for. Thankfully, I recently completed this process and wanted to share the steps I took to perform a successful upgrade.&lt;/p&gt;
+&lt;span class=&quot;gatsby-resp-image-wrapper&quot; style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 630px; &quot;&gt;
+      &lt;a class=&quot;gatsby-resp-image-link&quot; href=&quot;/static/b59e7a7cd2f74622c16ebaa98abbf321/21b4d/angular.png&quot; style=&quot;display: block&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;
+    &lt;span class=&quot;gatsby-resp-image-background-image&quot; style=&quot;padding-bottom: 50%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAKCAIAAAA7N+mxAAAACXBIWXMAAAsTAAALEwEAmpwYAAABQUlEQVR42mP4jwP8fPLs2cwFd6bO+froCS41DAjmPxDx99u3Nxu23MkqOWdoe9bIboeuzVYti1Op+Y/XbPz95StY2T9smv/+/f///9drN06rGp1S1D8uqfFy3pI785etE1bZKKO9UVb3/YXLIL1gZZg2g4z89er1eTOn0+om5y1dPp+78O7cxV2mzpsVDbbr2357+hy3zWDRv99/XHYLPC6m8qR70uOps+9MmH6ta/JaAcU9Np5/vn7DrRlmxI3I5FNK+l8uXfl8+dqHi5c/XLq6SU73cEA01ME4NYMlrken3M4q+njo2HlL113Gji/2HTqTWXI4MAZNJ4ZmsNmvlq2+EZt+2cX/hKLeJmntPXbexyJT7s1fhhZa2J0NCfO7BZWntMy3Khufziz+cOkqprXYNCMp+nDs5OvDx9EEkTUDAEs3+4TE63/tAAAAAElFTkSuQmCC&apos;); background-size: cover; display: block;&quot;&gt;&lt;/span&gt;
+  &lt;img class=&quot;gatsby-resp-image-image&quot; alt=&quot;Image for post&quot; title=&quot;&quot; src=&quot;/static/b59e7a7cd2f74622c16ebaa98abbf321/f058b/angular.png&quot; srcset=&quot;/static/b59e7a7cd2f74622c16ebaa98abbf321/c26ae/angular.png 158w,
+/static/b59e7a7cd2f74622c16ebaa98abbf321/6bdcf/angular.png 315w,
+/static/b59e7a7cd2f74622c16ebaa98abbf321/f058b/angular.png 630w,
+/static/b59e7a7cd2f74622c16ebaa98abbf321/40601/angular.png 945w,
+/static/b59e7a7cd2f74622c16ebaa98abbf321/78612/angular.png 1260w,
+/static/b59e7a7cd2f74622c16ebaa98abbf321/21b4d/angular.png 1280w&quot; sizes=&quot;(max-width: 630px) 100vw, 630px&quot; style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot; loading=&quot;lazy&quot; decoding=&quot;async&quot;&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;
+&lt;p&gt;&lt;strong&gt;Note:&lt;/strong&gt; a lot of these steps can be found on Angular&apos;s Update Guide here: &lt;a href=&quot;https://update.angular.io/&quot;&gt;https://update.angular.io/&lt;/a&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;All of the following commands should be run from &lt;code class=&quot;language-text&quot;&gt;&amp;lt;project-directory&gt;/ClientApp&lt;/code&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Update the current version of Angular 8&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;ng update @angular/core@8 @angular/cli@8&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Upgrade to version 9&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;ng update @angular/core@9 @angular/cli@9&lt;/code&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Remove &lt;code class=&quot;language-text&quot;&gt;export { renderModule, renderModuleFactory } from &apos;@angular/platform-server&apos;&lt;/code&gt; from &lt;code class=&quot;language-text&quot;&gt;main.ts&lt;/code&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Without removing these exports, the following error will be thrown at startup: &lt;code class=&quot;language-text&quot;&gt;Uncaught SyntaxError: Strict mode code may not include a with statement&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;More info: &lt;a href=&quot;https://stackoverflow.com/questions/60114758/uncaught-syntaxerror-strict-mode-code-may-not-include-a-with-statement&quot;&gt;https://stackoverflow.com/questions/60114758/uncaught-syntaxerror-strict-mode-code-may-not-include-a-with-statement&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;ng add @angular/localize&lt;/code&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;This is required since the Angular template seems to rely on Angular&apos;s internationalization system (i18n)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Change &lt;code class=&quot;language-text&quot;&gt;progress: false&lt;/code&gt; to &lt;code class=&quot;language-text&quot;&gt;progress: true&lt;/code&gt; in &lt;code class=&quot;language-text&quot;&gt;angular.json&lt;/code&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Without changing this value, the app will fail to start and the following error will be displayed on startup: &lt;code class=&quot;language-text&quot;&gt;TimeoutException: The Angular CLI process did not start listening for requests within the timeout period of 0 seconds&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;More info: &lt;a href=&quot;https://stackoverflow.com/questions/60189930/timeoutexception-the-angular-cli-process-did-not-start-listening-for-requests-w&quot;&gt;https://stackoverflow.com/questions/60189930/timeoutexception-the-angular-cli-process-did-not-start-listening-for-requests-w&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;npm uninstall @nguniversal/module-map-ngfactory-loader&lt;/code&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Remove &lt;code class=&quot;language-text&quot;&gt;ModuleMapLoaderModule&lt;/code&gt; import and reference from &lt;code class=&quot;language-text&quot;&gt;app.server.module.ts&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Upgrade to version 10&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;ng update @angular/cli @angular/core rxjs&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Upgrade dependencies&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;npm install -g npm-check-updates&lt;/code&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;This package will help upgrade all dependencies to their latest version&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;ncu -u&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;npm install&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;npm update&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;npm audit fix&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Voila! You are now running your .NET Core Angular project in version 10. Again, these are just the specific steps for going from version 8 to 10. To upgrade to other versions, check out AngularΓÇÖs Update Guide at &lt;a href=&quot;https://update.angular.io/&quot;&gt;https://update.angular.io/&lt;/a&gt;&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Software Engineering at Indiana Tech - A Reflection]]></title><description><![CDATA[Well, here we are at the end of my college career. In just a few weeks, I'll be walking across the stage at the Coliseum, diploma in hand…]]></description><link>https://blog.adamswanson.dev/college-reflection/</link><guid isPermaLink="false">https://blog.adamswanson.dev/college-reflection/</guid><pubDate>Fri, 08 May 2020 21:00:00 GMT</pubDate><content:encoded>&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 630px; &quot;
+    &gt;
+      &lt;a
+    class=&quot;gatsby-resp-image-link&quot;
+    href=&quot;/static/ac8320963ba94cbee58b8c6c835c9138/0f98f/reflection.jpg&quot;
+    style=&quot;display: block&quot;
+    target=&quot;_blank&quot;
+    rel=&quot;noopener&quot;
+  &gt;
+    &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 66.45569620253164%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/jpeg;base64,/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wgARCAANABQDASIAAhEBAxEB/8QAFwAAAwEAAAAAAAAAAAAAAAAAAAQFAf/EABUBAQEAAAAAAAAAAAAAAAAAAAAB/9oADAMBAAIQAxAAAAGXXgupgoL/AP/EABwQAAICAgMAAAAAAAAAAAAAAAECAAMEMhESE//aAAgBAQABBQKhgsqaozL6+w1Q8Szb/8QAFBEBAAAAAAAAAAAAAAAAAAAAEP/aAAgBAwEBPwE//8QAFBEBAAAAAAAAAAAAAAAAAAAAEP/aAAgBAgEBPwE//8QAGxAAAgIDAQAAAAAAAAAAAAAAAREAAhAiQZH/2gAIAQEABj8CLqDA618mqS5DBj//xAAbEAACAgMBAAAAAAAAAAAAAAAAASFxETFBYf/aAAgBAQABPyHKlPolVCxy4AcdYhpy3Z//2gAMAwEAAgADAAAAEOgv/8QAFREBAQAAAAAAAAAAAAAAAAAAEEH/2gAIAQMBAT8Qp//EABYRAAMAAAAAAAAAAAAAAAAAABARQf/aAAgBAgEBPxBwf//EABsQAQEBAAMBAQAAAAAAAAAAAAERACFBUWGB/9oACAEBAAE/EB2Uig5J5m29FS8e5puBoTDJD5kCCnf45FHgdrv/2Q==&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Reflection&quot;
+        title=&quot;&quot;
+        src=&quot;/static/ac8320963ba94cbee58b8c6c835c9138/828fb/reflection.jpg&quot;
+        srcset=&quot;/static/ac8320963ba94cbee58b8c6c835c9138/ff44c/reflection.jpg 158w,
+/static/ac8320963ba94cbee58b8c6c835c9138/a6688/reflection.jpg 315w,
+/static/ac8320963ba94cbee58b8c6c835c9138/828fb/reflection.jpg 630w,
+/static/ac8320963ba94cbee58b8c6c835c9138/0ede0/reflection.jpg 945w,
+/static/ac8320963ba94cbee58b8c6c835c9138/3ac88/reflection.jpg 1260w,
+/static/ac8320963ba94cbee58b8c6c835c9138/0f98f/reflection.jpg 1920w&quot;
+        sizes=&quot;(max-width: 630px) 100vw, 630px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+        decoding=&quot;async&quot;
+      /&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;Well, here we are at the end of my college career. In just a few weeks, I&apos;ll be walking across the stage at the Coliseum, diploma in hand, ready to take the next step towards a life of success...&lt;/p&gt;
+&lt;p&gt;...at least, that was the plan before COVID-19 hit and brought the world to a stand-still. Now, the campus is shut down, people are stuck in their homes, and students are struggling to finish their spring semester. Even professors are scrambling to restructure their courses for an online environment. Unlike others, however, I&apos;ve been having one of the most successful semesters of my entire college experience as I continue to learn and grow my technical abilities like never before.&lt;/p&gt;
+&lt;p&gt;The journey from an inexperienced freshman to a successful senior has been long: there&apos;s been bumps, there&apos;s been turns, and there&apos;s been falls. However, as a result, there&apos;s been some great climbs. These climbs have built up my character, my courage, my ability to present and work with others, my knowledge, my understanding, and my appreciation for the world around me. This journey has really shaped who I am today and has helped prepare me for the start of a great career.&lt;/p&gt;
+&lt;p&gt;As I reflect on these past four years, my goal is to examine the experiences that impacted me the most; not just to reminisce about them, but to see why they left such an impact. By doing so, I hope to reveal which things were beneficial, which ones were not (if any), how they&apos;ve affected me, and how they will impact my future.&lt;/p&gt;
+&lt;h2&gt;Getting Involved&lt;/h2&gt;
+&lt;p&gt;If I had to pick one thing that helped me grow the most, it would be my involvement on campus. Interestingly, getting involved was the one thing I &lt;em&gt;didn&apos;t&lt;/em&gt; want to do coming into college. I saw student life and student orgs simply as a way for students to get a break from classes and socialize. As the shy, quiet kid, I was determined to stick to my classes, get the &apos;A&apos;, and move on. I figured I didn&apos;t &lt;em&gt;need&lt;/em&gt; to be involved. However, that perspective was quickly changed.&lt;/p&gt;
+&lt;h3&gt;Summer Camp Staff&lt;/h3&gt;
+&lt;p&gt;Before I began my freshman year, I attended a computer science engineering camp at Indiana Tech during the summer of 2016 which ultimately finalized my decision to attend college there. This week-long camp filled with hands-on programming activities, games, and movies was one of my most memorable moments at Tech and has stuck with me over the years. After that camp finished, I knew that Tech was were I wanted to go, and I hoped that, one day, I could return as a camp staff member.&lt;/p&gt;
+&lt;p&gt;As it turned out, I was approached two years later by Nate Whetstone, the camp director, to join the staff as an activity assistant and RA. I worked alongside Nate and other staff members to lead students through Arduino projects. They had a blast, and I had a lot of fun working with them. It was a wonderful opportunity to return to camp and help provide students with a memorable experience like I had gotten a couple years prior.&lt;/p&gt;
+&lt;h3&gt;Cyber Defense&lt;/h3&gt;
+&lt;p&gt;By the end of my first semester, I had joined the JV Cyber Defense team at the request of my server systems professor, Matt Hansen, who also happened to be the team advisor. Shortly thereafter, I became the team lead. As a student leader in high school, holding a leadership position was not new to me. However, I was surprised that I was able to join the JV team and become the team lead as a freshman with no prior cyber security experience. My dedication to learning showed me I had what it took to pick up a new skill, and my new role in this team showed me that I could push myself to go beyond the classroom and join an organization that interested me and offered additional learning experiences. By taking the leadership role, I was able to practice my communication, organization, and time-management skills which stuck with me throughout the rest of my time at college.&lt;/p&gt;
+&lt;p&gt;The following year, I moved up to the varsity team and began cross-training between the documentation and Linux specialties. I used my free time to train for the Collegiate Cyber Defense Competition and found myself traveling to Chicago and Orlando to compete in the Regional and National rounds. Not only was I learning new skills in cyber security, but I was also given the chance to travel across the country, an opportunity that I would not have gotten otherwise. I also traveled with the team to the CyberForce and Cyber Maryland competitions in Washington and Maryland. I made some great friends through this team, and the times we spent together throughout my college career are some of my most memorable moments in college, moments that I hope to never forget.&lt;/p&gt;
+&lt;h3&gt;ACM&lt;/h3&gt;
+&lt;p&gt;In my sophomore year, I was approached by my software engineering professor, Brian Lewandowski, to join the ACM chapter on campus and run for vice president. Although I was hesitant, the additional encouragement from classmates pushed me to enter the race which led to my election. Through this position, I worked alongside current president Hannah Dodd to plan meetings, organize our trip to the Reflections Projections tech conference at the University of Illinois, and plan our own ITECS conference on campus.&lt;/p&gt;
+&lt;p&gt;The next year, I was elected as president of our ACM chapter which came with its own challenges. This was the first time where everyone was looking to me for guidance, and I was not used to this level of responsibility. It was now up to me to plan agendas and club events, coordinate work between our officers, present allocation requests to the student executive board, and, essentially, lead the club. Having this work on my shoulders, in addition to the work required by the cyber defense team and my classes, as well as the amount of communication required between me and the members, officers, and college staff, really put a burden on me. The responsibility load got to me, and, honestly, it was not always fun. There were times I wanted to quit, but I pressed on.&lt;/p&gt;
+&lt;p&gt;As a result, I went from the shy guy to the one calling the shots. I learned to take initiative, prioritize my work, and take some great steps at overcoming my fears as a leader. I&apos;ve become more comfortable in social environments and feel that I&apos;ve really grown in my character. Serving in this role has helped me greatly with public speaking, and while I&apos;m certainly not the best, I&apos;m much better now than what I used to be.&lt;/p&gt;
+&lt;p&gt;In addition, as president of a student organization, I was introduced to the student executive board and president&apos;s council where I worked alongside other student leaders to plan events and fundraisers to engage the student body. Being a part of these committees helped me gain an appreciation for those that work behind the scenes to make these campus events possible. I was exposed to the inner workings of student life and was shown what it was really about: building an engaged community. It was a great place to learn from other leaders, to see how they led their organizations and what approaches worked for them.&lt;/p&gt;
+&lt;h3&gt;Orientation Leader&lt;/h3&gt;
+&lt;p&gt;At the start of my senior year, I served as an orientation leader for incoming freshmen. Over the opening weekend, I and my fellow orientation leader helped guide our group of students to various activities across campus and helped them get acclimated to college life. Although it was outside my comfort zone, I was encouraged to apply and I&apos;m glad I did. Afterwards, I felt that I helped students feel welcome as my orientation leaders had done for me a few years prior, and it really felt nice to be able to give back.&lt;/p&gt;
+&lt;h3&gt;Takeaways&lt;/h3&gt;
+&lt;p&gt;Getting involved has helped me get out of my shell. It allowed me to branch out and see what all was out there, and it helped me find a newfound interest in cyber security, travel across the country, and learn valuable professional skills. Had I stuck solely to my classes, I would not have the cyber security skills, communication skills, time-management skills, and traveling experiences that I have today. I have really grown as an individual as a result of my involvement on campus, and I&apos;m thankful for those who encouraged me to do so.&lt;/p&gt;
+&lt;h2&gt;Project Classes&lt;/h2&gt;
+&lt;p&gt;As a fundamental part of my software engineering degree, project classes helped me prepare for &quot;real-world&quot; work. Over the past eight semesters, I&apos;ve been involved in four software projects, each one exposing me to different technologies. My first project for Bandwaves Media taught me the essentials for front-end development, introduced me to HTML, CSS, and Javascript, and taught me the importance of backups and version-control. In the Library Card project, my team used C# and Windows Forms to build an app that worked with a MySQL database on the backend. With the Fort Wayne Trails app, I got my hands into cross-platform development and all the challenges that come along with that. Finally, TrackDuck introduced me to the world of JavaScript frameworks by working with React, Angular, and Node.js.&lt;/p&gt;
+&lt;p&gt;Along with the new technological experience, working on these projects has helped me work more effectively in a team setting. Learning how to best communicate with teammates and coordinate work were the most important soft-skills that I gained from these project classes. The hardest part for me was learning how to go from a one-man-show to being part of a group. At the beginning, I wasn&apos;t used to programming with others and I was far more comfortable working on my own. However, I soon learned that the software engineering field requires great teamwork skills and I was able to adapt quickly.&lt;/p&gt;
+&lt;h2&gt;Internships&lt;/h2&gt;
+&lt;p&gt;During my four years at Tech I had three internships...four if you count my three-week unpaid internship. Similar to my project classes, each one exposed me to new technologies.&lt;/p&gt;
+&lt;h3&gt;Aubry Lane (Summer 2017)&lt;/h3&gt;
+&lt;p&gt;Although my internship at Aubry Lane was short, I was able to finish a good amount of work and gain some decent experience. Over the three-week period, I was tasked with adding new features to their customer portal to allow users to add emergency contacts to their tracking devices. This required a back-end update to their .NET website as well as a new back-end service to handle SMS requests.&lt;/p&gt;
+&lt;p&gt;Working with .NET sites was unfamiliar territory for me. One of my challenges was understanding the MVC framework (Model, View, Controller) and how to work within it. Another challenge I faced was interacting with an API using Python, a language I was not familiar with. There was one developer I could bounce questions off of, but for the most part I was on my own.&lt;/p&gt;
+&lt;p&gt;Thankfully, I was able to learn quickly and implement the requested features during my time there. Using what I learned about .NET would prove useful as I moved on to other internships.&lt;/p&gt;
+&lt;h3&gt;West Side Tractor Sales (Summer 2018)&lt;/h3&gt;
+&lt;p&gt;At West Side, the sales department presented me with three main projects, the first one being a program that could map out their main database and show how the data was related. This would be used by the sales team to find the relevant data they needed to pull into their reports. The second project was an app that would compare their in-house data with that from a third party and determine whether both sources were in sync, and if not, what data was missing. The final project was a web app that the whole company could use to track shipments between stores and include additional delivery information.&lt;/p&gt;
+&lt;p&gt;Once again, I found myself working with existing systems that I was not familiar with. However, I knew from previous experience that I could pick it up quickly given some time. Kip Bancroft, one of my mentors, showed me the tools he used to load data into his reports under-the-hood which really helped me integrate with their database. Within two week&apos;s time I was making considerable progress on my first project.&lt;/p&gt;
+&lt;p&gt;It was during this internship where I really discovered the importance of planning. When trying to solve a problem or add a feature, I would draw out my plan of attack and develop a model of the new system I wanted to build. I would show what parts it had, how it would function and interact, and how I could wire everything together. Once I felt the model was ready, I implemented it in the code. If I ever made a change while coding, it was to fix a problem that I overlooked or to make the model better. Spending time in a design phase saved me a lot of time in the coding phase.&lt;/p&gt;
+&lt;p&gt;For the web app project, I decided to use the .NET framework. Outside of my experience at Aubry Lane with .NET MVC, I had no experience with building web apps, and this would be the first web app I ever built. I chose to use Razor pages over the traditional MVC structure since it was newer and seemed easier to learn. I also integrated third-party authentication so that employees could login with their pre-existing work accounts. I learned quite a bit about web development from this project, including working with databases with Entity Framework, adding authentication through Identity, and using view models to interact between the front-end and back-end.&lt;/p&gt;
+&lt;p&gt;Looking back, this was a very ambitious move for West Side since they had never hired an in-house software developer before. While I didn&apos;t have any other developers to go to for help, my mentors were very understanding and were able to answer any questions I had from a user perspective. This gave me a better understanding of how the current system was being used, and I built the resulting programs around that.&lt;/p&gt;
+&lt;h3&gt;Rea Magnet Wire (Summer 2019)&lt;/h3&gt;
+&lt;p&gt;Through the Greater Fort Wayne Fellows program, I was placed with Rea Magnet Wire as a summer intern. This time, I worked as part of a development team that maintained the company&apos;s internal system and would add new features as the business required them. Although I hoped to work with technologies I already knew, those hopes were quickly dashed as I was introduced to, yet again, another unfamiliar system. On the bright side, I had two mentors and a number of fellow developers who were always available and willing to help when I needed it. In the past, I relied heavily on outside resources to help me during the app development process. However, online documentation was hard to come by for this particular language, and I found myself using those around me to help find the right solution.&lt;/p&gt;
+&lt;p&gt;The shift to using an older language was a challenge at first. Finding similarities to other languages that I knew helped me get acclimated to the new syntax and program structure. One thing that stuck with me the most was the importance of well-documented (and self-documenting) code. During my internship, I often found myself working with code that was about as old as I was. Sometimes it took me a full day to walk my way through the code and really understand what it was doing. Legacy code like this can run for years and remain untouched until a new business requirement comes around. I learned that leaving good, clean code behind that&apos;s easy to follow and understand is key for maintainability.&lt;/p&gt;
+&lt;h3&gt;Aptera (Senior year)&lt;/h3&gt;
+&lt;p&gt;Following my summer internship at Rea Magnet Wire, I was approached by Aptera to join their internship program in the fall semester of my senior year. As I write this paper at the end of the spring semester, I&apos;ve finished my work as an intern and am joining their team as a full-time developer. Their internship/onboarding Academy program has really blown me away. Reflecting on my past internships, I think I can truly say that I&apos;ve learned more from this internship than the others.&lt;/p&gt;
+&lt;p&gt;The Academy program I went through is based around the Scrum framework. Every two weeks, the interns, Scrum master/product owner/Academy guide (Jon Fazzaro), and myself would set a goal for what we wanted to learn. We would choose a collection of topics to study, then take time to learn the material and also share what we learned. At the end of the two weeks, we would hold a review session with our &quot;stakeholders&quot; (project managers) and then set a goal for the next two-week sprint. We used a kanban board in Azure DevOps to organize and track our work. This approach was a great way for me to both learn new technologies, design principles, and coding strategies and also introduce me to the Scrum framework for handling projects.&lt;/p&gt;
+&lt;p&gt;After this learning phase, we took what we learned and started a new personal finance project. Using two-week sprints, we planned and implemented several features that incorporated lessons that we learned previously like accessibility and globalization. We also took a test-driven development approach and incorporated both unit tests and integration tests in our app. We also automated builds and releases to production through the DevOps pipeline.&lt;/p&gt;
+&lt;p&gt;Going into a heavily team-based setting as a previously solo developer was a pretty big shift for me. Although I had experience working in teams in my project classes, the biggest difference was that everyone involved would actually do their work and could be depended on. Developing projects as a team meant learning new collaboration techniques like pair programming and mob programming. Having others around that were as involved in the project as I was helped ease my mind knowing that I could count on them.&lt;/p&gt;
+&lt;p&gt;There was a great balance between learning and doing, and I enjoyed being able to take the time to learn new things and apply it to an actual project. Doing hands on work in a professional setting was also a great learning experience, and by doing mob programming I was able to learn new techniques from other developers. There were many technical skills that I learned during this internship; here are just a few: clean code principles, clean architecture, test-driven development, source control with Git, testing libraries and frameworks, React frontend framework, ASP.NET Core and the MVC framework, pair/mob programming, Scrum framework, Kanban boards, and the DevOps pipeline (continuous integration and delivery). I foresee myself using many, if not all, of these new skills in the years to come.&lt;/p&gt;
+&lt;h2&gt;Conclusion&lt;/h2&gt;
+&lt;p&gt;Over the duration of my college career, I have grown in several ways in various areas. I&apos;ve picked up many soft skills like public speaking, leadership, and time management through my involvement on campus, as well as numerous hard skills across multiple platforms, languages, and frameworks. These skills were not just learned in the classroom, but also through real-world experience in project classes and internships which will stay with me throughout my future career.&lt;/p&gt;
+&lt;p&gt;Although I&apos;ve improved significantly over the last four years, the improvement doesn&apos;t stop there. There&apos;s lots more to learn, and I must keep myself open to new ideas. There are many who helped me along the way, including my family, friends, professors, software engineering classmates, cyber defense teammates, and my mentors at work. I certainly could not have done this alone, and I must never forget those that helped me get to where I am today.&lt;/p&gt;
+&lt;p&gt;Reflecting on the past four years has really shown me how far I&apos;ve come, and it&apos;s helped me remember everything I&apos;ve achieved during this time. As I move on to my first full-time software engineering position and start my career, I hope to never forget where I used to be and never lose sight of where I can go.&lt;/p&gt;</content:encoded></item></channel></rss>
