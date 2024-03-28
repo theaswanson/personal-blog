@@ -1,4 +1,64 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Adam Swanson's Blog RSS Feed]]></title><description><![CDATA[The writings of a software developer.]]></description><link>https://blog.adamswanson.dev</link><generator>GatsbyJS</generator><lastBuildDate>Wed, 02 Aug 2023 20:59:22 GMT</lastBuildDate><item><title><![CDATA[Adding Authentication with Azure AD to a .NET Angular Web App with MSAL]]></title><description><![CDATA[I recently went through this process and was disappointed at the lack of documentation. Then I realized that the latest version of the…]]></description><link>https://blog.adamswanson.dev/azure-ad-auth-dotnet-angular-msal/</link><guid isPermaLink="false">https://blog.adamswanson.dev/azure-ad-auth-dotnet-angular-msal/</guid><pubDate>Thu, 11 Mar 2021 20:00:00 GMT</pubDate><content:encoded>&lt;p&gt;&lt;span
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Adam Swanson's Blog RSS Feed]]></title><description><![CDATA[The writings of a software developer.]]></description><link>https://blog.adamswanson.dev</link><generator>GatsbyJS</generator><lastBuildDate>Thu, 28 Mar 2024 23:35:01 GMT</lastBuildDate><item><title><![CDATA[We're pressured to not write tests. Here's how to overcome that, and why you should.]]></title><description><![CDATA[It's true: having tests gives you safety. Safety to add new features. Safety to refactor code. Safety to fix one bug without causing two…]]></description><link>https://blog.adamswanson.dev/pressure-to-not-write-tests/</link><guid isPermaLink="false">https://blog.adamswanson.dev/pressure-to-not-write-tests/</guid><pubDate>Thu, 28 Mar 2024 23:20:00 GMT</pubDate><content:encoded>&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 630px; &quot;
+    &gt;
+      &lt;a
+    class=&quot;gatsby-resp-image-link&quot;
+    href=&quot;/static/c626320f585be6e5ddc791fcbe31dc0b/eea4a/header.jpg&quot;
+    style=&quot;display: block&quot;
+    target=&quot;_blank&quot;
+    rel=&quot;noopener&quot;
+  &gt;
+    &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 56.32911392405063%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/jpeg;base64,/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wgARCAALABQDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAQF/8QAFQEBAQAAAAAAAAAAAAAAAAAAAgP/2gAMAwEAAhADEAAAAdea6I00Ap//xAAaEAACAgMAAAAAAAAAAAAAAAABAgADERIi/9oACAEBAAEFAridRw0cArQMtP/EABYRAAMAAAAAAAAAAAAAAAAAAAIQMf/aAAgBAwEBPwEYv//EABQRAQAAAAAAAAAAAAAAAAAAABD/2gAIAQIBAT8BP//EABoQAQACAwEAAAAAAAAAAAAAAAEAERAhQVH/2gAIAQEABj8CAauFaenuNy3mP//EABoQAQACAwEAAAAAAAAAAAAAAAERIQAQQTH/2gAIAQEAAT8hJYGJzqJQkrRUCTCax8zzX//aAAwDAQACAAMAAAAQP8//xAAXEQEAAwAAAAAAAAAAAAAAAAABECFB/9oACAEDAQE/EFdwj//EABYRAAMAAAAAAAAAAAAAAAAAAAEQMf/aAAgBAgEBPxA1f//EAB4QAQABBAIDAAAAAAAAAAAAAAERABAhQTFRgbHB/9oACAEBAAE/EGjZs8hC/KwMDmAFiTv2WB9BPk3Qe71TZ//Z&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Header&quot;
+        title=&quot;&quot;
+        src=&quot;/static/c626320f585be6e5ddc791fcbe31dc0b/828fb/header.jpg&quot;
+        srcset=&quot;/static/c626320f585be6e5ddc791fcbe31dc0b/ff44c/header.jpg 158w,
+/static/c626320f585be6e5ddc791fcbe31dc0b/a6688/header.jpg 315w,
+/static/c626320f585be6e5ddc791fcbe31dc0b/828fb/header.jpg 630w,
+/static/c626320f585be6e5ddc791fcbe31dc0b/0ede0/header.jpg 945w,
+/static/c626320f585be6e5ddc791fcbe31dc0b/3ac88/header.jpg 1260w,
+/static/c626320f585be6e5ddc791fcbe31dc0b/eea4a/header.jpg 1280w&quot;
+        sizes=&quot;(max-width: 630px) 100vw, 630px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+        decoding=&quot;async&quot;
+      /&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;It&apos;s true: having tests gives you safety. Safety to add new features. Safety to refactor code. Safety to fix one bug without causing two more. And they&apos;re completely automated, saving time that you would&apos;ve spent manually testing. These benefits are a real game-changer in the software development industry, allowing us developers to &lt;strong&gt;confidently build products - with fewer bugs - in less time&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;And yet, not all of us write tests. Why?&lt;/p&gt;
+&lt;p&gt;Pressure.&lt;/p&gt;
+&lt;p&gt;We&apos;re pressured to not write tests. This comes from outside as well as within. Things like time constraints, deadlines, blockers in the code, and more pressure us to move quickly from one ticket to the next without giving tests a proper thought. And sometimes we&apos;re convinced this is the right thing to do.&lt;/p&gt;
+&lt;p&gt;Some say that &lt;em&gt;&quot;writing tests is time-consuming,&quot;&lt;/em&gt; &lt;em&gt;&quot;tests get in the way,&quot;&lt;/em&gt;, or &lt;em&gt;&quot;writing tests is not satisfying.&quot;&lt;/em&gt; However, are these valid reasons? Is the time we save by not writing tests justified? When comparing the pros of tests with the cons, I think not. Let&apos;s identify these sources of pressure so we can overcome them and reap the benefits that tests provide.&lt;/p&gt;
+&lt;h2&gt;Pressure from Outside&lt;/h2&gt;
+&lt;p&gt;In today&apos;s fast-paced work environment, companies want new features and they want them now. They often don&apos;t care if the product is made well or runs well, they just care that it &lt;em&gt;runs&lt;/em&gt; and that they beat their competitors to market. This can become apparent in tight deadlines which pressures us engineers to work as fast as possible, churning out tickets and moving to the next one while cutting corners where necessary. When time is of the essence, how can we afford to spend time on tests?&lt;/p&gt;
+&lt;p&gt;The real question is, &quot;How can we afford &lt;em&gt;not&lt;/em&gt; to?&quot;&lt;/p&gt;
+&lt;p&gt;Without testability in mind, code quality can suffer. It becomes easy to develop a solution that works, but is rigid and difficult to change. When it inevitably needs to change, new additions are bolted on in unintuitive ways until it becomes too difficult to maintain. This tech debt adds up over time and makes development a chore. At some point, the debt must be paid. But how can it when time is already short?&lt;/p&gt;
+&lt;p&gt;In addition to tech debt, a lack of tests causes lots of manual testing. This may seem trivial when the feature is new, but when the software changes in the future, how can we ensure it functions as intended? Tests preserve intent, giving developers confidence that their changes have not affected previous behavior in unintended ways. Without them, bugs can slip through unnoticed until they rear their heads in production.&lt;/p&gt;
+&lt;p&gt;While we may be pressured by deadlines, we can&apos;t let it keep us from adding tests that help us reduce tech debt, reduce future bugs, and reduce time spent on manual testing. By spending time to write good tests now, we spend less time fixing bugs and paying down tech debt later.&lt;/p&gt;
+&lt;p&gt;This quote from Robert Martin comes to mind:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&quot;The only way to go fast, is to go well.&quot; &lt;sup id=&quot;fnref-1&quot;&gt;&lt;a href=&quot;#fn-1&quot; class=&quot;footnote-ref&quot;&gt;1&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;Pressure from Within&lt;/h2&gt;
+&lt;p&gt;We also pressure ourselves into not writing tests. Sometimes we find the process of writing them to be too tedious, whether it&apos;s adding tests in retrospect or creating them through a test-driven development approach. Determining the test cases, setting up the test fixtures, and following the &quot;Red 🔴 - Green 🟢 - Blue 🔵&quot; process can be tiring and seem slow as opposed to just writing the feature itself. We sometimes second-guess ourselves and wonder if writing the tests is worth it.&lt;/p&gt;
+&lt;p&gt;There may also be blockers to adding tests. Maybe you&apos;re changing existing code that doesn&apos;t have tests, so you&apos;d have to set those up yourself. Perhaps you have a dependency on some untestable code that also makes your new code untestable. You&apos;d have to spend even more time fixing these blockers first before you can write the tests that &lt;em&gt;you&lt;/em&gt; wanted to add.&lt;/p&gt;
+&lt;p&gt;Maybe you&apos;ve had poor experiences with tests in the past, such as flaky tests causing your pipelines to fail repeatedly, or brittle tests that required changes with any little refactoring. These may have convinced you that tests only get in the way and do more harm than good.&lt;/p&gt;
+&lt;p&gt;All of these experiences can pressure us to avoid writing tests. They&apos;re unpleasant after all, and they don&apos;t give us that same rush we get when building that new UI or solving that complex problem we&apos;ve been working diligently to solve. It helps to remember that the tests are not just for you, but for other developers, too. Not only do they help ensure your feature is functional, they also ensure future developers don&apos;t break what you&apos;ve built (including yourself). They provide that safety for adding new features, refactoring code, and fixing bugs. By writing good tests, you provide that safety to you, your fellow developers, and even future developers you may never meet.&lt;/p&gt;
+&lt;h2&gt;Conclusion&lt;/h2&gt;
+&lt;p&gt;There are several pros to having good tests: more automated testing, less manual testing, less tech debt, fewer bugs, and faster development. These benefits are huge, but they can only be enjoyed if tests are continually added and maintained. While there are influences that persuade us to forego automated testing, it&apos;s important to write tests as we build and maintain software, that way we can deliver more, faster.&lt;/p&gt;
+&lt;div class=&quot;footnotes&quot;&gt;
+&lt;hr&gt;
+&lt;ol&gt;
+&lt;li id=&quot;fn-1&quot;&gt;Martin, Robert C. &lt;em&gt;Clean Architecture.&lt;/em&gt; Prentice Hall, 2017.&lt;a href=&quot;#fnref-1&quot; class=&quot;footnote-backref&quot;&gt;↩&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content:encoded></item><item><title><![CDATA[Adding Authentication with Azure AD to a .NET Angular Web App with MSAL]]></title><description><![CDATA[I recently went through this process and was disappointed at the lack of documentation. Then I realized that the latest version of the…]]></description><link>https://blog.adamswanson.dev/azure-ad-auth-dotnet-angular-msal/</link><guid isPermaLink="false">https://blog.adamswanson.dev/azure-ad-auth-dotnet-angular-msal/</guid><pubDate>Thu, 11 Mar 2021 20:00:00 GMT</pubDate><content:encoded>&lt;p&gt;&lt;span
       class=&quot;gatsby-resp-image-wrapper&quot;
       style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 630px; &quot;
     &gt;
